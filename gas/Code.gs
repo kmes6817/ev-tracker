@@ -20,7 +20,7 @@ const SHARED_TOKEN = PropertiesService.getScriptProperties().getProperty('SHARED
 
 const RECORDS_SHEET = 'records';
 const LOAN_SHEET = 'loan';
-const RECORD_HEADERS = ['id', 'cat', 'amt', 'date', 'type', 'brand', 'note'];
+const RECORD_HEADERS = ['id', 'cat', 'amt', 'date', 'type', 'brand', 'note', 'kwh', 'odo'];
 const LOAN_HEADERS = ['price', 'down', 'rate', 'months', 'start'];
 
 function _json(obj) {
@@ -87,7 +87,7 @@ function _load() {
   for (let i = 1; i < recValues.length; i++) {
     const row = recValues[i];
     if (!row[0]) continue;
-    records.push({
+    const rec = {
       id: String(row[0]),
       cat: row[1],
       amt: Number(row[2]) || 0,
@@ -95,7 +95,12 @@ function _load() {
       type: row[4] || 'r',
       brand: row[5] || '',
       note: row[6] || '',
-    });
+    };
+    const kwh = Number(row[7]);
+    const odo = Number(row[8]);
+    if (kwh > 0) rec.kwh = kwh;
+    if (odo > 0) rec.odo = odo;
+    records.push(rec);
   }
   records.sort((a, b) => b.date.localeCompare(a.date));
 
@@ -120,7 +125,17 @@ function _save(records, loan) {
   recSh.clearContents();
   recSh.appendRow(RECORD_HEADERS);
   if (records.length) {
-    const rows = records.map((r) => [r.id, r.cat, r.amt, r.date, r.type, r.brand || '', r.note || '']);
+    const rows = records.map((r) => [
+      r.id,
+      r.cat,
+      r.amt,
+      r.date,
+      r.type,
+      r.brand || '',
+      r.note || '',
+      r.kwh || '',
+      r.odo || '',
+    ]);
     recSh.getRange(2, 1, rows.length, RECORD_HEADERS.length).setValues(rows);
   }
 

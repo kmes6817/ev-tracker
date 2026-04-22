@@ -336,6 +336,22 @@ select:focus {
   transition: width 0.3s;
 }
 
+/* ---------- Import/Export ---------- */
+.io-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.io-btn {
+  flex: 1;
+  padding: 8px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: 6px;
+}
+
 /* ---------- List ---------- */
 .filter-row {
   display: flex;
@@ -451,6 +467,51 @@ select:focus {
 .pill-o {
   background: #eeedfe;
   color: #534ab7;
+}
+.pill-kwh {
+  background: #e6f1fb;
+  color: #185fa5;
+}
+.pill-odo {
+  background: #f1efe8;
+  color: #634441;
+}
+
+/* ---------- EV stats ---------- */
+.ev-stats {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.ev-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.ev-cell {
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 8px 10px;
+  min-width: 0;
+}
+.ev-l {
+  font-size: 11px;
+  color: var(--text-soft);
+  margin-bottom: 2px;
+}
+.ev-v {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ev-u {
+  font-size: 10px;
+  color: var(--text-ghost);
+  font-weight: 400;
 }
 .item-right {
   text-align: right;

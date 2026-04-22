@@ -56,6 +56,16 @@
           <label for="f-brand">品牌 / 廠商</label>
           <input type="text" id="f-brand" placeholder="例:3M、KW" maxlength="60" />
         </div>
+        <div class="row hide" id="ev-fields">
+          <div>
+            <label for="f-kwh">度數 kWh(選填)</label>
+            <input type="number" inputmode="decimal" id="f-kwh" placeholder="0.0" step="0.01" min="0" />
+          </div>
+          <div>
+            <label for="f-odo">里程 km(選填)</label>
+            <input type="number" inputmode="numeric" id="f-odo" placeholder="車機上的里程" min="0" />
+          </div>
+        </div>
         <div class="field">
           <label for="f-note">備註(選填)</label>
           <input type="text" id="f-note" maxlength="120" />
@@ -95,6 +105,15 @@
 
       <!-- LIST -->
       <section id="tab-list" class="hide" aria-label="明細">
+        <div class="io-row">
+          <button type="button" class="io-btn" data-action="exportCsv" aria-label="匯出 CSV">
+            ⬇️ 匯出 CSV
+          </button>
+          <button type="button" class="io-btn" data-action="importCsv" aria-label="匯入 CSV">
+            ⬆️ 匯入 CSV
+          </button>
+          <input type="file" id="csv-file" accept=".csv,text/csv" class="visually-hidden" />
+        </div>
         <div class="field">
           <label for="search" class="visually-hidden">搜尋</label>
           <input type="text" id="search" placeholder="🔍  搜尋類別、備註、日期…" />
@@ -118,6 +137,7 @@
 
       <!-- CHART -->
       <section id="tab-chart" class="hide" aria-label="統計">
+        <div id="ev-stats"></div>
         <div id="trend-container"></div>
         <label for="c-month" class="visually-hidden">月份</label>
         <select id="c-month" style="width: auto; margin-bottom: 12px">

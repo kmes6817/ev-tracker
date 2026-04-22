@@ -21,3 +21,5 @@ jobs:
         run: npm run format:check
       - name: HTML validate
         run: npx html-validate index.html || true
+      - name: Unit tests
+        run: npm test

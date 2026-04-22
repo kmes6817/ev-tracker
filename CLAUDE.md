@@ -58,13 +58,13 @@ tests/*.test.js             — Vitest unit tests
 
 ## Config / secrets map
 
-| Layer | Key | Where | Notes |
-|---|---|---|---|
-| GitHub repo secret | `GAS_URL` | Settings → Secrets → Actions | Injected at deploy time |
-| GitHub repo secret | `GAS_TOKEN` | same | Currently empty; enable with `SHARED_TOKEN` |
-| Apps Script property | `SHEET_ID` | AS → Project Settings → Script Properties | `1rs_a1fY_GF0lPWrbJzKRR19NBJes64hEDGjZ3wpl-Ng` |
-| Apps Script property | `SHARED_TOKEN` | same | Unset = token check skipped (backwards compat) |
-| User's local | `config.local.js` | gitignored in repo root | Mirror of secrets for local dev |
+| Layer                | Key               | Where                                     | Notes                                          |
+| -------------------- | ----------------- | ----------------------------------------- | ---------------------------------------------- |
+| GitHub repo secret   | `GAS_URL`         | Settings → Secrets → Actions              | Injected at deploy time                        |
+| GitHub repo secret   | `GAS_TOKEN`       | same                                      | Currently empty; enable with `SHARED_TOKEN`    |
+| Apps Script property | `SHEET_ID`        | AS → Project Settings → Script Properties | `1rs_a1fY_GF0lPWrbJzKRR19NBJes64hEDGjZ3wpl-Ng` |
+| Apps Script property | `SHARED_TOKEN`    | same                                      | Unset = token check skipped (backwards compat) |
+| User's local         | `config.local.js` | gitignored in repo root                   | Mirror of secrets for local dev                |
 
 If the user reports "連線失敗", check these three layers in order. Script Properties is the layer most often forgotten after a code paste.
 

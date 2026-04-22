@@ -28,34 +28,57 @@ const state = {
   sort: 'date_desc',
   cMonth: 'all',
   touch: null,
+  lastSyncAt: null,
 };
 
 const app = {
+  /**
+   * Cache-first load:
+   *   1. Paint localStorage data immediately (feels instant)
+   *   2. Kick off GAS fetch in background
+   *   3. When it returns, update state + re-render only if data changed
+   */
   async load() {
-    this.setSync('loading', '載入中…');
+    // Step 1 — paint local cache
+    const local = api.loadLocal();
+    if (local.records.length || local.loan) {
+      state.recs = local.records;
+      state.loan = local.loan;
+      this.fillLoanForm();
+      this.renderAll();
+    }
+
+    this.setSync('loading', local.records.length ? '同步中…' : '載入中…');
+
+    // Step 2 — network fetch (non-blocking for first paint)
     try {
       const data = await api.load();
+      const changed =
+        JSON.stringify(data.records) !== JSON.stringify(state.recs) ||
+        JSON.stringify(data.loan) !== JSON.stringify(state.loan);
       state.recs = data.records;
       state.loan = data.loan;
+      state.lastSyncAt = Date.now();
       this.fillLoanForm();
-      this.setSync('ok', '已同步 ' + this.nowHHMM());
-      this.renderAll();
-      // Retry any offline writes
+      this.setSyncFresh();
+      if (changed) this.renderAll();
+
+      // Step 3 — retry any offline writes
       if (api.hasPending()) {
         try {
           await api.flushPending();
-          this.setSync('ok', '已同步 ' + this.nowHHMM());
+          this.setSyncFresh();
         } catch {
           this.setSync('error', '部分變更待同步');
         }
       }
     } catch (e) {
-      this.setSync('error', '連線失敗：' + e.message);
-      const local = api.loadLocal();
-      state.recs = local.records;
-      state.loan = local.loan;
-      this.fillLoanForm();
-      this.renderAll();
+      if (!state.recs.length && !state.loan) {
+        // no cache and no network — show the real error
+        this.setSync('error', '連線失敗:' + e.message);
+      } else {
+        this.setSync('error', '離線 — 顯示本機資料');
+      }
     }
   },
 
@@ -63,10 +86,24 @@ const app = {
     this.setSync('loading', '同步中…');
     try {
       await api.save({ records: state.recs, loan: state.loan });
-      this.setSync('ok', '已同步 ' + this.nowHHMM());
+      state.lastSyncAt = Date.now();
+      this.setSyncFresh();
     } catch {
       this.setSync('error', '離線 — 已暫存,下次連線自動重送');
     }
+  },
+
+  /** Human-friendly relative time — '剛剛', '2 分鐘前', '1 小時前'. */
+  setSyncFresh() {
+    if (!state.lastSyncAt) return this.setSync('ok', '已同步');
+    const diff = Math.round((Date.now() - state.lastSyncAt) / 1000);
+    let label;
+    if (diff < 10) label = '剛剛同步';
+    else if (diff < 60) label = `${diff} 秒前同步`;
+    else if (diff < 3600) label = `${Math.floor(diff / 60)} 分鐘前同步`;
+    else if (diff < 86400) label = `${Math.floor(diff / 3600)} 小時前同步`;
+    else label = `${Math.floor(diff / 86400)} 天前同步`;
+    this.setSync('ok', label);
   },
 
   fillLoanForm() {
@@ -346,6 +383,14 @@ const app = {
   },
 
   renderStats() {
+    if (!state.recs.length && !state.loan) {
+      $('#stats').innerHTML = `<div class="onboarding">
+        <div style="font-size:32px;margin-bottom:8px">👋</div>
+        <div style="font-weight:500;margin-bottom:4px">歡迎使用 EV 費用追蹤</div>
+        <div style="font-size:12px;color:var(--text-soft)">從下方選一個類別,填入金額就能開始記錄。先設貸款可看到每月總擁車成本。</div>
+      </div>`;
+      return;
+    }
     const total = state.recs.reduce((s, r) => s + r.amt, 0);
     const curTm = currentYearMonth();
     const mAmt = state.recs.filter((r) => r.date.slice(0, 7) === curTm).reduce((s, r) => s + r.amt, 0);
@@ -587,14 +632,18 @@ const handleClick = (e) => {
     return;
   }
   const action = t.dataset.action;
+  if (['submit', 'saveLoan', 'del', 'switchTab'].includes(action)) haptic(10);
   switch (action) {
     case 'reload':
+      haptic(15);
       return app.load();
     case 'setType':
       return app.setType(t.dataset.type);
     case 'selCat':
+      haptic(5);
       return app.selCat(t.dataset.cat);
     case 'copyLast':
+      haptic(8);
       return app.copyLast();
     case 'submit':
       return app.submitForm();
@@ -662,6 +711,84 @@ app.renderNav();
 window.addEventListener('online', () => {
   if (api.hasPending()) app.load();
 });
+
+// When the tab becomes visible again (user came back after a while),
+// refresh both the relative-time label and fetch fresh data.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    if (state.lastSyncAt) app.setSyncFresh();
+    // Re-sync if it's been > 2 minutes
+    if (!state.lastSyncAt || Date.now() - state.lastSyncAt > 120000) app.load();
+  }
+});
+
+// Keep relative sync time label up to date without re-fetching
+setInterval(() => {
+  if (state.lastSyncAt && document.visibilityState === 'visible') app.setSyncFresh();
+}, 30000);
+
+// Haptic feedback — short vibrate on tactile actions (no-op if unsupported)
+const haptic = (ms = 10) => {
+  if (navigator.vibrate) navigator.vibrate(ms);
+};
+
+// ========== Pull-to-refresh ==========
+(function setupPtr() {
+  const THRESHOLD = 72;
+  const el = document.getElementById('ptr');
+  if (!el) return;
+  let startY = null;
+  let tracking = false;
+
+  document.addEventListener(
+    'touchstart',
+    (e) => {
+      if (window.scrollY > 0) return;
+      startY = e.touches[0].clientY;
+      tracking = true;
+    },
+    { passive: true }
+  );
+
+  document.addEventListener(
+    'touchmove',
+    (e) => {
+      if (!tracking || startY == null) return;
+      const dy = e.touches[0].clientY - startY;
+      if (dy <= 0) {
+        el.classList.remove('show');
+        return;
+      }
+      if (dy > 20) {
+        const pct = Math.min(dy / THRESHOLD, 1);
+        el.textContent = pct >= 1 ? '↓ 放開同步' : '⟳ 下拉同步';
+        el.classList.add('show');
+        el.style.transform = `translate(-50%, ${Math.min(dy - 40, 40)}px)`;
+      }
+    },
+    { passive: true }
+  );
+
+  document.addEventListener(
+    'touchend',
+    (e) => {
+      if (!tracking || startY == null) return;
+      const dy = e.changedTouches[0].clientY - startY;
+      tracking = false;
+      startY = null;
+      el.style.transform = '';
+      if (dy >= THRESHOLD) {
+        el.classList.add('show');
+        el.textContent = '⟳ 同步中…';
+        haptic(12);
+        app.load().finally(() => setTimeout(() => el.classList.remove('show'), 400));
+      } else {
+        el.classList.remove('show');
+      }
+    },
+    { passive: true }
+  );
+})();
 
 // Register service worker for offline support
 if ('serviceWorker' in navigator) {

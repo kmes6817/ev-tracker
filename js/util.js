@@ -3,8 +3,7 @@ export const $ = (s, root = document) => root.querySelector(s);
 export const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
 
 const escMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-export const escapeHtml = (v) =>
-  v == null ? '' : String(v).replace(/[&<>"']/g, (c) => escMap[c]);
+export const escapeHtml = (v) => (v == null ? '' : String(v).replace(/[&<>"']/g, (c) => escMap[c]));
 
 export const uuid = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();

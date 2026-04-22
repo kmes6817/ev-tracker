@@ -33,8 +33,12 @@
         <div id="edit-bar" class="hide"></div>
         <button id="copy-last" type="button" class="copy-last hide" data-action="copyLast"></button>
         <div class="type-row" role="tablist" aria-label="類型">
-          <button type="button" class="type-btn on" data-action="setType" data-type="r" role="tab">⚡ 日常</button>
-          <button type="button" class="type-btn" data-action="setType" data-type="o" role="tab">🔧 一次性</button>
+          <button type="button" class="type-btn on" data-action="setType" data-type="r" role="tab">
+            ⚡ 日常
+          </button>
+          <button type="button" class="type-btn" data-action="setType" data-type="o" role="tab">
+            🔧 一次性
+          </button>
         </div>
         <div class="sect-title">選擇類別</div>
         <div class="cat-grid" id="cat-grid"></div>
@@ -97,7 +101,9 @@
         </div>
         <div class="filter-row">
           <label for="m-filter" class="visually-hidden">月份篩選</label>
-          <select id="m-filter"><option value="all">全部月份</option></select>
+          <select id="m-filter">
+            <option value="all">全部月份</option>
+          </select>
           <label for="t-filter" class="visually-hidden">類型篩選</label>
           <select id="t-filter">
             <option value="all">全部</option>

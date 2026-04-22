@@ -26,6 +26,7 @@ cp config.example.js config.local.js
 ```
 
 直接以瀏覽器開啟 `index.html`,或用任一靜態 server:
+
 ```bash
 python3 -m http.server 8000
 # 瀏覽 http://localhost:8000

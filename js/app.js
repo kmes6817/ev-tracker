@@ -10,7 +10,7 @@ import {
   safeParseInt,
   toast,
 } from './util.js';
-import { CATEGORIES, categoriesOfType, categoryMeta } from './categories.js';
+import { categoriesOfType, categoryMeta } from './categories.js';
 import { api } from './api.js';
 
 const state = {
@@ -81,7 +81,12 @@ const app = {
   },
 
   setSync(status, msg) {
-    const colors = { idle: 'var(--text-ghost)', loading: 'var(--warn-text)', ok: 'var(--success)', error: 'var(--danger)' };
+    const colors = {
+      idle: 'var(--text-ghost)',
+      loading: 'var(--warn-text)',
+      ok: 'var(--success)',
+      error: 'var(--danger)',
+    };
     const icons = { idle: '○', loading: '⟳', ok: '✓', error: '✕' };
     const el = $('#sync-msg');
     el.style.color = colors[status];
@@ -309,7 +314,11 @@ const app = {
     const data = [
       ['總花費', `$${total.toLocaleString()}`, `${state.recs.length} 筆`],
       ['本月日常', `$${mAmt.toLocaleString()}`, curTm],
-      ['本月擁車成本', `$${(mAmt + mo).toLocaleString()}`, mo ? `含月供 $${mo.toLocaleString()}` : '未設貸款'],
+      [
+        '本月擁車成本',
+        `$${(mAmt + mo).toLocaleString()}`,
+        mo ? `含月供 $${mo.toLocaleString()}` : '未設貸款',
+      ],
       ['一次性改裝', `$${oAmt.toLocaleString()}`, ''],
     ];
     $('#stats').innerHTML = data
@@ -368,7 +377,7 @@ const app = {
     state.mFilter = mSel.value;
     state.tFilter = $('#t-filter').value;
 
-    let d = state.recs.filter(
+    const d = state.recs.filter(
       (r) =>
         (state.mFilter === 'all' || r.date.slice(0, 7) === state.mFilter) &&
         (state.tFilter === 'all' || r.type === state.tFilter) &&
@@ -429,7 +438,9 @@ const app = {
       const m = r.date.slice(0, 7);
       bm[m] = (bm[m] || 0) + r.amt;
     });
-    const trend = Object.entries(bm).sort(([a], [b]) => a.localeCompare(b)).slice(-6);
+    const trend = Object.entries(bm)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6);
     const curTm = currentYearMonth();
     const trendEl = $('#trend-container');
     if (trend.length > 1) {
@@ -556,7 +567,8 @@ document.addEventListener('change', handleChange);
 
 if (!window.EV_CONFIG || !window.EV_CONFIG.GAS_URL) {
   const warn = document.createElement('div');
-  warn.style.cssText = 'background:var(--warn-bg);padding:12px 16px;border-bottom:1px solid var(--warn-border);font-size:13px;color:var(--warn-text)';
+  warn.style.cssText =
+    'background:var(--warn-bg);padding:12px 16px;border-bottom:1px solid var(--warn-border);font-size:13px;color:var(--warn-text)';
   warn.textContent = '⚠️ 尚未設定 config.local.js — 僅本機儲存,請參考 README 建立設定檔以啟用雲端同步。';
   document.body.insertBefore(warn, document.body.firstChild);
 }

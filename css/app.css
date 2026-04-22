@@ -336,6 +336,22 @@ select:focus {
   transition: width 0.3s;
 }
 
+/* ---------- Import/Export ---------- */
+.io-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.io-btn {
+  flex: 1;
+  padding: 8px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: 6px;
+}
+
 /* ---------- List ---------- */
 .filter-row {
   display: flex;

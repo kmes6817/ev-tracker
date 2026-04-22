@@ -105,6 +105,15 @@
 
       <!-- LIST -->
       <section id="tab-list" class="hide" aria-label="明細">
+        <div class="io-row">
+          <button type="button" class="io-btn" data-action="exportCsv" aria-label="匯出 CSV">
+            ⬇️ 匯出 CSV
+          </button>
+          <button type="button" class="io-btn" data-action="importCsv" aria-label="匯入 CSV">
+            ⬆️ 匯入 CSV
+          </button>
+          <input type="file" id="csv-file" accept=".csv,text/csv" class="visually-hidden" />
+        </div>
         <div class="field">
           <label for="search" class="visually-hidden">搜尋</label>
           <input type="text" id="search" placeholder="🔍  搜尋類別、備註、日期…" />

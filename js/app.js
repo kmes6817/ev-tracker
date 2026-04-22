@@ -12,6 +12,7 @@ import {
 } from './util.js';
 import { categoriesOfType, categoryMeta } from './categories.js';
 import { computeEvStats } from './evStats.js';
+import { recordsToCsv, csvToRecords, mergeImported, downloadBlob } from './csv.js';
 import { api } from './api.js';
 
 const state = {
@@ -241,6 +242,33 @@ const app = {
     toast('已刪除');
     this.save();
     this.renderAll();
+  },
+
+  exportCsv() {
+    if (!state.recs.length) return toast('沒有記錄可匯出', 'error');
+    const stamp = todayISO().replace(/-/g, '');
+    downloadBlob(recordsToCsv(state.recs), `ev-tracker-${stamp}.csv`);
+    toast(`已匯出 ${state.recs.length} 筆`);
+  },
+
+  triggerImport() {
+    $('#csv-file').click();
+  },
+
+  async importCsvFile(file) {
+    try {
+      const text = await file.text();
+      const parsed = csvToRecords(text);
+      if (!parsed.length) return toast('CSV 沒有有效資料', 'error');
+      const before = state.recs.length;
+      state.recs = mergeImported(state.recs, parsed, uuid);
+      const added = state.recs.length - before;
+      toast(`匯入完成:新增 ${added},更新 ${parsed.length - added}`);
+      this.save();
+      this.renderAll();
+    } catch (e) {
+      toast('匯入失敗:' + e.message, 'error');
+    }
   },
 
   saveLoan() {
@@ -583,6 +611,10 @@ const handleClick = (e) => {
       return app.openEdit(t.dataset.id);
     case 'del':
       return app.delRec(t.dataset.id);
+    case 'exportCsv':
+      return app.exportCsv();
+    case 'importCsv':
+      return app.triggerImport();
   }
 };
 
@@ -600,6 +632,10 @@ const handleInput = (e) => {
 const handleChange = (e) => {
   if (e.target.id === 'm-filter' || e.target.id === 't-filter') app.renderList();
   if (e.target.id === 'c-month') app.renderChart();
+  if (e.target.id === 'csv-file' && e.target.files[0]) {
+    app.importCsvFile(e.target.files[0]);
+    e.target.value = '';
+  }
 };
 
 // ========== Init ==========

@@ -23,6 +23,9 @@ const LOAN_SHEET = 'loan';
 const RECORD_HEADERS = ['id', 'cat', 'amt', 'date', 'type', 'brand', 'note', 'kwh', 'odo'];
 const LOAN_HEADERS = ['price', 'down', 'rate', 'months', 'start'];
 
+// Legacy headers (pre-v0.2) — used for migration if the sheet still has the old layout.
+const LEGACY_RECORD_HEADERS = ['id', 'cat', 'amt', 'date', 'type', 'brand', 'note'];
+
 function _json(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(
     ContentService.MimeType.JSON
@@ -30,13 +33,20 @@ function _json(obj) {
 }
 
 function _requireToken(token) {
-  if (!SHARED_TOKEN) throw new Error('Backend misconfigured: SHARED_TOKEN not set');
+  // Token check is optional. If SHARED_TOKEN is unset, we skip it so upgrades
+  // from the pre-v0.2 backend keep working. Set it in Script Properties to
+  // enable authentication.
+  if (!SHARED_TOKEN) return;
   if (token !== SHARED_TOKEN) throw new Error('Unauthorized');
 }
 
 function _ss() {
-  if (!SHEET_ID) throw new Error('Backend misconfigured: SHEET_ID not set');
-  return SpreadsheetApp.openById(SHEET_ID);
+  // Prefer explicit SHEET_ID; fall back to the bound spreadsheet when the
+  // script is attached to a sheet (Extensions → Apps Script).
+  if (SHEET_ID) return SpreadsheetApp.openById(SHEET_ID);
+  const active = SpreadsheetApp.getActiveSpreadsheet();
+  if (active) return active;
+  throw new Error('Backend misconfigured: set SHEET_ID in Script Properties');
 }
 
 function _sheet(name, headers) {
@@ -45,6 +55,13 @@ function _sheet(name, headers) {
   if (!sh) {
     sh = ss.insertSheet(name);
     sh.appendRow(headers);
+    return sh;
+  }
+  // Migrate legacy header row (missing kwh/odo) in place
+  const firstRow = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0];
+  const nonEmpty = firstRow.filter((c) => c !== '' && c != null);
+  if (nonEmpty.length > 0 && nonEmpty.length < headers.length) {
+    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
   }
   return sh;
 }

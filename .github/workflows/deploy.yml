@@ -1,0 +1,58 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate config.local.js from secrets
+        env:
+          GAS_URL: ${{ secrets.GAS_URL }}
+          GAS_TOKEN: ${{ secrets.GAS_TOKEN }}
+        run: |
+          if [ -z "$GAS_URL" ]; then
+            echo "::error::GAS_URL secret is not set. Add it under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          cat > config.local.js <<EOF
+          window.EV_CONFIG = {
+            GAS_URL: '${GAS_URL}',
+            TOKEN: '${GAS_TOKEN}',
+          };
+          EOF
+          echo "config.local.js generated ($(wc -c < config.local.js) bytes)"
+
+      - name: Stage site files
+        run: |
+          mkdir -p _site
+          cp -r index.html css js icons manifest.webmanifest sw.js config.local.js _site/
+          ls -la _site/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

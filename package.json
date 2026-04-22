@@ -1,0 +1,26 @@
+{
+  "name": "ev-tracker",
+  "version": "0.2.0",
+  "description": "EV cost tracking PWA with Google Sheets sync",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint \"js/**/*.js\" sw.js",
+    "lint:fix": "eslint --fix \"js/**/*.js\" sw.js",
+    "format": "prettier --write \"**/*.{js,css,html,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,css,html,json,md}\"",
+    "validate:html": "html-validate index.html",
+    "serve": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "html-validate": "^9.0.0",
+    "prettier": "^3.0.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kmes6817/ev-tracker.git"
+  }
+}

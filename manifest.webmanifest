@@ -1,0 +1,20 @@
+{
+  "name": "EV 費用追蹤",
+  "short_name": "EV 費用",
+  "description": "電動車花費記錄與貸款試算",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f0f0ee",
+  "theme_color": "#378ADD",
+  "lang": "zh-TW",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

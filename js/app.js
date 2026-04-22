@@ -571,6 +571,13 @@ window.addEventListener('online', () => {
   if (api.hasPending()) app.load();
 });
 
+// Register service worker for offline support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch((e) => console.warn('SW register failed', e));
+  });
+}
+
 app.load();
 
 export { app, state };

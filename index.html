@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="EV 費用">
+<meta name="theme-color" content="#378ADD">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23378ADD' rx='20'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='white'%3E⚡%3C/text%3E%3C/svg%3E">
+<title>EV 費用追蹤</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:#f0f0ee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111;color-scheme:light}
+body{max-width:520px;margin:0 auto;padding-bottom:72px;min-height:100vh}
+.sync-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:#fff;border-bottom:0.5px solid #e0e0e0;position:sticky;top:0;z-index:50}
+.sync-bar .s{font-size:11px;font-weight:500}
+.sync-bar button{font-size:11px;color:#378ADD;background:none;border:none;cursor:pointer;font-weight:500;padding:4px 8px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px}
+.stat{background:#fff;border-radius:10px;padding:10px 14px}
+.stat-l{font-size:11px;color:#888;margin-bottom:3px}
+.stat-v{font-size:19px;font-weight:500}
+.stat-s{font-size:10px;color:#aaa;margin-top:2px}
+.card{background:#fff;border-radius:16px;margin:0 12px;padding:16px}
+label{display:block;font-size:12px;color:#666;margin-bottom:5px}
+input,select{width:100%;font-size:15px;padding:10px 12px;border:0.5px solid #ccc;border-radius:8px;background:#fff;color:#111;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:#378ADD}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.field{margin-bottom:12px}
+.type-row{display:flex;background:#f0f0ee;border-radius:10px;padding:3px;gap:3px;margin-bottom:14px}
+.type-btn{flex:1;padding:8px 0;border:none;background:transparent;border-radius:8px;font-size:13px;font-weight:500;color:#888;cursor:pointer}
+.type-btn.on{background:#fff;color:#111;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.sect-title{font-size:11px;color:#aaa;font-weight:500;margin-bottom:8px}
+.cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px}
+.cat-btn{padding:10px 4px;border:1.5px solid #e0e0e0;border-radius:8px;background:#fff;color:#666;font-size:12px;cursor:pointer;text-align:center;line-height:1.4;font-family:inherit;transition:all .15s}
+.cat-btn .ci{font-size:18px;display:block;margin-bottom:2px}
+.cat-btn.sel{font-weight:500}
+.btn-primary{width:100%;padding:13px 0;background:#378ADD;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;transition:background .3s;font-family:inherit}
+.btn-primary.ok{background:#1D9E75}
+.btn-save{width:100%;padding:13px 0;background:#f0f0ee;color:#333;border:0.5px solid #ccc;border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit}
+.btn-save.ok{background:#1D9E75;color:#fff}
+.edit-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:9px 14px;background:#FFF8E1;border-radius:8px;border:1px solid #EF9F27}
+.edit-bar span{font-size:13px;color:#BA7517;font-weight:500}
+.edit-bar button{font-size:13px;color:#BA7517;background:none;border:none;cursor:pointer;font-weight:500}
+.copy-last{width:100%;padding:9px 12px;margin-bottom:12px;background:#f5f5f3;border:0.5px solid #e0e0e0;border-radius:8px;font-size:13px;color:#555;cursor:pointer;text-align:left;font-family:inherit}
+.loan-card{background:#f5f5f3;border-radius:12px;padding:16px;margin-bottom:16px}
+.loan-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid #e0e0e0;font-size:14px}
+.loan-row:last-child{border-bottom:none}
+.loan-k{color:#666}
+.loan-v{font-weight:500;color:#111}
+.progress{height:10px;background:#e0e0e0;border-radius:5px;overflow:hidden;margin:12px 0 4px}
+.progress-fill{height:100%;background:#378ADD;border-radius:5px;transition:width .3s}
+.filter-row{display:flex;gap:6px;margin-bottom:8px}
+.filter-row select{flex:1;font-size:13px;padding:8px 10px}
+.sort-row{display:flex;gap:6px;margin-bottom:12px}
+.sort-btn{flex:1;padding:6px 0;font-size:11px;border:1px solid #e0e0e0;border-radius:6px;background:#fff;color:#888;cursor:pointer;font-family:inherit}
+.sort-btn.on{border-color:#378ADD;background:#E6F1FB;color:#185FA5;font-weight:500}
+.item{position:relative;overflow:hidden;border-bottom:0.5px solid #f0f0ee}
+.item-actions{position:absolute;right:0;top:0;bottom:0;display:flex;z-index:1}
+.item-actions button{width:72px;color:#fff;border:none;font-size:12px;font-weight:500;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:inherit}
+.item-actions .edit{background:#378ADD}
+.item-actions .del{background:#E24B4A}
+.item-body{display:flex;align-items:center;gap:10px;padding:12px 0;background:#fff;transition:transform .2s;position:relative;z-index:2}
+.item-body.swiped{transform:translateX(-144px)}
+.cat-dot{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.item-info{flex:1;min-width:0}
+.item-name{font-size:14px;font-weight:500;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-meta{font-size:11px;color:#888;margin-top:2px}
+.pill{font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px}
+.pill-r{background:#E1F5EE;color:#0F6E56}
+.pill-o{background:#EEEDFE;color:#534AB7}
+.item-right{text-align:right;flex-shrink:0}
+.item-amt{font-size:15px;font-weight:500}
+.hint{font-size:9px;color:#ccc;margin-top:2px}
+.empty{text-align:center;padding:2rem;color:#aaa;font-size:13px}
+.trend-row{display:flex;align-items:flex-end;gap:5px;height:80px;margin-bottom:4px}
+.trend-bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+.trend-v{font-size:9px;color:#888;line-height:1}
+.trend-fill{width:100%;background:#378ADD;border-radius:4px 4px 0 0;min-height:4px}
+.trend-labels{display:flex;gap:5px;border-bottom:0.5px solid #e0e0e0;padding-bottom:8px;margin-bottom:16px}
+.trend-label{flex:1;text-align:center;font-size:9px;color:#bbb}
+.trend-label.cur{color:#378ADD;font-weight:500}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.bar-label{font-size:12px;color:#888;width:72px;text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:12px;background:#f0f0ee;border-radius:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:6px;transition:width .3s}
+.bar-val{font-size:11px;font-weight:500;width:64px;text-align:right;flex-shrink:0;color:#111}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;display:flex;background:#fff;border-top:0.5px solid #e0e0e0;z-index:99;padding-bottom:env(safe-area-inset-bottom)}
+.nav-btn{flex:1;padding:10px 4px 9px;border:none;background:none;color:#bbb;font-size:10px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-family:inherit}
+.nav-btn.on{color:#378ADD}
+.nav-icon{font-size:22px;line-height:1}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="sync-bar">
+  <span class="s" id="sync-msg" style="color:#aaa">○ 初始化</span>
+  <button onclick="app.load()">重新整理</button>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<div class="card">
+  <!-- ADD -->
+  <div id="tab-add">
+    <div id="edit-bar" class="hide"></div>
+    <button id="copy-last" class="copy-last hide" onclick="app.copyLast()"></button>
+    <div class="type-row">
+      <button class="type-btn on" data-type="r" onclick="app.setType('r')">⚡ 日常</button>
+      <button class="type-btn" data-type="o" onclick="app.setType('o')">🔧 一次性</button>
+    </div>
+    <div class="sect-title">選擇類別</div>
+    <div class="cat-grid" id="cat-grid"></div>
+    <div class="row">
+      <div><label>金額（元）</label><input type="number" inputmode="numeric" id="f-amt" placeholder="0"></div>
+      <div><label>日期</label><input type="date" id="f-date"></div>
+    </div>
+    <div class="field hide" id="brand-field"><label>品牌 / 廠商</label><input type="text" id="f-brand" placeholder="例：3M、KW"></div>
+    <div class="field"><label>備註（選填）</label><input type="text" id="f-note"></div>
+    <button class="btn-primary" id="btn-submit" onclick="app.submitForm()">＋ 新增</button>
+  </div>
+
+  <!-- LOAN -->
+  <div id="tab-loan" class="hide">
+    <div id="loan-display"></div>
+    <div class="row">
+      <div><label>車價</label><input type="number" inputmode="numeric" id="l-price" placeholder="0"></div>
+      <div><label>頭期款</label><input type="number" inputmode="numeric" id="l-down" placeholder="0"></div>
+    </div>
+    <div class="row">
+      <div><label>年利率 %</label><input type="number" inputmode="decimal" id="l-rate" placeholder="2.5" step="0.01"></div>
+      <div><label>期數（月）</label><input type="number" inputmode="numeric" id="l-months" placeholder="60"></div>
+    </div>
+    <div class="field"><label>首期日期</label><input type="date" id="l-start"></div>
+    <button class="btn-save" id="btn-loan" onclick="app.saveLoan()">儲存貸款設定</button>
+  </div>
+
+  <!-- LIST -->
+  <div id="tab-list" class="hide">
+    <div class="field"><input type="text" id="search" placeholder="🔍  搜尋類別、備註、日期…" oninput="app.renderList()"></div>
+    <div class="filter-row">
+      <select id="m-filter" onchange="app.renderList()"><option value="all">全部月份</option></select>
+      <select id="t-filter" onchange="app.renderList()"><option value="all">全部</option><option value="r">日常</option><option value="o">一次性</option></select>
+    </div>
+    <div class="sort-row" id="sort-row"></div>
+    <div style="font-size:12px;color:#aaa;margin-bottom:8px" id="list-count"></div>
+    <div id="list"></div>
+  </div>
+
+  <!-- CHART -->
+  <div id="tab-chart" class="hide">
+    <div id="trend-container"></div>
+    <select id="c-month" onchange="app.renderChart()" style="width:auto;margin-bottom:12px"><option value="all">全部月份</option></select>
+    <div id="chart"></div>
+  </div>
+</div>
+
+<div class="nav" id="nav"></div>
+
+<script>
+// ============ CONFIG ============
+const GAS_URL = "https://script.google.com/macros/s/AKfycbymrUZkuicCFiao5x6Cz1MCulYG-ljJbXEv3w906rRDxM8GRoUMZY6wcwyd6_fB0DdB-g/exec";
+
+const CC={充電:'#378ADD',停車:'#7F77DD',過路費:'#BA7517',保險:'#D4537E',保養:'#1D9E75',洗車:'#639922',罰單:'#E24B4A',其他:'#888780',貼膜:'#533AB7',改避震:'#5DCAA5',充電樁:'#185FA5',隔熱紙:'#EF9F27',行車紀錄:'#3B6D11',底盤防鏽:'#888780',輪胎:'#555555',購車配件:'#993556',其他改裝:'#634441'};
+const CB={充電:'#E6F1FB',停車:'#EEEDFE',過路費:'#FAEEDA',保險:'#FBEAF0',保養:'#E1F5EE',洗車:'#EAF3DE',罰單:'#FCEBEB',其他:'#F1EFE8',貼膜:'#EEEDFE',改避震:'#E1F5EE',充電樁:'#E6F1FB',隔熱紙:'#FAEEDA',行車紀錄:'#EAF3DE',底盤防鏽:'#F1EFE8',輪胎:'#F1EFE8',購車配件:'#FBEAF0',其他改裝:'#F1EFE8'};
+const CI={充電:'⚡',停車:'🅿️',過路費:'🛣️',保險:'🛡️',保養:'🔧',洗車:'🚿',罰單:'📋',其他:'📦',貼膜:'🎨',改避震:'🔩',充電樁:'🔌',隔熱紙:'🪟',行車紀錄:'📷',底盤防鏽:'🛠️',輪胎:'🏎️',購車配件:'🎁',其他改裝:'⚙️'};
+const CATS_R=['充電','停車','過路費','保險','保養','洗車','罰單','其他'];
+const CATS_O=['貼膜','改避震','充電樁','隔熱紙','行車紀錄','底盤防鏽','輪胎','購車配件','其他改裝'];
+
+const state = {
+  tab: 'add',
+  recs: [],
+  loan: null,
+  editId: null,
+  swipedId: null,
+  fType: 'r', fCat: '',
+  mFilter: 'all', tFilter: 'all', sort: 'date_desc', cMonth: 'all',
+};
+
+const $ = s => document.querySelector(s);
+const today = () => new Date().toISOString().slice(0,10);
+const tm = () => today().slice(0,7);
+const calcMo = (p,ar,m) => { if(!ar||!m) return 0; const r=ar/100/12; return r?p*r*Math.pow(1+r,m)/(Math.pow(1+r,m)-1):p/m; };
+
+const app = {
+  async load() {
+    this.setSync('loading', '載入中…');
+    try {
+      const r = await fetch(`${GAS_URL}?action=load`, { redirect: 'follow' });
+      const data = await r.json();
+      state.recs = data.records || [];
+      state.loan = data.loan || null;
+      if (state.loan) {
+        $('#l-price').value = state.loan.price || '';
+        $('#l-down').value = state.loan.down || '';
+        $('#l-rate').value = state.loan.rate || '';
+        $('#l-months').value = state.loan.months || '';
+        $('#l-start').value = state.loan.start || today();
+      }
+      this.setSync('ok', '已同步 ' + new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}));
+      this.renderAll();
+    } catch (e) {
+      this.setSync('error', '連線失敗：' + e.message);
+      // fallback to local
+      const local = localStorage.getItem('ev_records');
+      if (local) { state.recs = JSON.parse(local); }
+      const locL = localStorage.getItem('ev_loan');
+      if (locL) { state.loan = JSON.parse(locL); }
+      this.renderAll();
+    }
+  },
+  async save() {
+    localStorage.setItem('ev_records', JSON.stringify(state.recs));
+    localStorage.setItem('ev_loan', JSON.stringify(state.loan));
+    this.setSync('loading', '同步中…');
+    try {
+      await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action:'save', records: state.recs, loan: state.loan }),
+        redirect: 'follow',
+      });
+      this.setSync('ok', '已同步 ' + new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}));
+    } catch (e) {
+      this.setSync('error', '離線模式，暫存本機');
+    }
+  },
+  setSync(status, msg) {
+    const colors = { idle:'#aaa', loading:'#BA7517', ok:'#1D9E75', error:'#E24B4A' };
+    const icons = { idle:'○', loading:'⟳', ok:'✓', error:'✕' };
+    $('#sync-msg').style.color = colors[status];
+    $('#sync-msg').textContent = icons[status] + ' ' + msg;
+  },
+
+  setType(t) { state.fType = t; state.fCat = '';
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('on', b.dataset.type === t));
+    $('#brand-field').classList.toggle('hide', t !== 'o');
+    this.renderCats();
+  },
+  selCat(c) { state.fCat = c; this.renderCats(); },
+  renderCats() {
+    const cats = state.fType === 'r' ? CATS_R : CATS_O;
+    $('#cat-grid').innerHTML = cats.map(c => {
+      const on = state.fCat === c;
+      return `<button class="cat-btn ${on?'sel':''}" style="${on?`border-color:${CC[c]};background:${CB[c]};color:${CC[c]}`:''}" onclick="app.selCat('${c}')"><span class="ci">${CI[c]}</span>${c}</button>`;
+    }).join('');
+  },
+  copyLast() {
+    if (!state.recs.length) return;
+    const r = state.recs[0];
+    this.setType(r.type);
+    state.fCat = r.cat;
+    $('#f-amt').value = r.amt;
+    $('#f-date').value = r.date;
+    $('#f-brand').value = r.brand || '';
+    $('#f-note').value = r.note || '';
+    this.renderCats();
+  },
+  renderCopyLast() {
+    if (state.editId || !state.recs.length) { $('#copy-last').classList.add('hide'); return; }
+    const r = state.recs[0];
+    $('#copy-last').classList.remove('hide');
+    $('#copy-last').innerHTML = `📋 複製上一筆 — ${CI[r.cat]} ${r.cat} · $${r.amt.toLocaleString()}`;
+  },
+  renderEditBar() {
+    const el = $('#edit-bar');
+    if (state.editId) {
+      el.classList.remove('hide');
+      el.className = 'edit-bar';
+      el.innerHTML = `<span>✏️ 編輯模式</span><button onclick="app.cancelEdit()">取消</button>`;
+      $('#btn-submit').className = 'btn-primary ok';
+      $('#btn-submit').textContent = '✓ 儲存修改';
+    } else {
+      el.classList.add('hide');
+      $('#btn-submit').className = 'btn-primary';
+      $('#btn-submit').textContent = '＋ 新增';
+    }
+  },
+  cancelEdit() { state.editId = null; this.clearForm(); this.renderEditBar(); },
+  clearForm() { $('#f-amt').value=''; $('#f-note').value=''; $('#f-brand').value=''; },
+
+  submitForm() {
+    if (!state.fCat) { alert('請選擇類別'); return; }
+    const amt = parseFloat($('#f-amt').value);
+    const date = $('#f-date').value;
+    if (!amt || amt <= 0 || !date) { alert('請填寫金額與日期'); return; }
+    const rec = {
+      cat: state.fCat, amt, date,
+      brand: $('#f-brand').value,
+      note: $('#f-note').value,
+      type: state.fType,
+    };
+    if (state.editId) {
+      state.recs = state.recs.map(r => r.id === state.editId ? { ...r, ...rec } : r);
+      state.editId = null;
+      this.switchTab('list');
+    } else {
+      rec.id = Date.now();
+      state.recs = [rec, ...state.recs];
+      const btn = $('#btn-submit');
+      btn.textContent = '✓ 已新增'; btn.className = 'btn-primary ok';
+      setTimeout(() => { btn.textContent = '＋ 新增'; btn.className = 'btn-primary'; }, 1200);
+    }
+    this.clearForm();
+    this.save();
+    this.renderAll();
+  },
+
+  openEdit(id) {
+    const r = state.recs.find(x => x.id === id);
+    if (!r) return;
+    state.editId = id;
+    this.setType(r.type);
+    state.fCat = r.cat;
+    $('#f-amt').value = r.amt;
+    $('#f-date').value = r.date;
+    $('#f-brand').value = r.brand || '';
+    $('#f-note').value = r.note || '';
+    this.switchTab('add');
+  },
+  delRec(id) {
+    state.recs = state.recs.filter(r => r.id !== id);
+    state.swipedId = null;
+    this.save();
+    this.renderAll();
+  },
+
+  saveLoan() {
+    const price = parseFloat($('#l-price').value);
+    const months = parseInt($('#l-months').value);
+    if (!price || !months) { alert('請填寫車價與期數'); return; }
+    state.loan = {
+      price, months,
+      down: parseFloat($('#l-down').value) || 0,
+      rate: parseFloat($('#l-rate').value) || 0,
+      start: $('#l-start').value || today(),
+    };
+    const btn = $('#btn-loan');
+    btn.textContent = '✓ 已儲存'; btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = '儲存貸款設定'; btn.classList.remove('ok'); }, 1200);
+    this.save();
+    this.renderAll();
+  },
+
+  // Touch swipe
+  touchStart(e, id) { this.touch = { x: e.touches[0].clientX, y: e.touches[0].clientY, id }; if (state.swipedId && state.swipedId !== id) { state.swipedId = null; this.renderList(); } },
+  touchEnd(e, id) {
+    if (!this.touch) return;
+    const dx = e.changedTouches[0].clientX - this.touch.x;
+    const dy = e.changedTouches[0].clientY - this.touch.y;
+    if (Math.abs(dx) > Math.abs(dy) * 1.2 && dx < -44) { state.swipedId = id; this.renderList(); }
+    else if (state.swipedId === id) { state.swipedId = null; this.renderList(); }
+  },
+
+  switchTab(t) {
+    state.tab = t;
+    ['add','loan','list','chart'].forEach(id => $('#tab-'+id).classList.toggle('hide', id !== t));
+    this.renderNav();
+    if (t !== 'add') { state.editId = null; this.clearForm(); this.renderEditBar(); }
+    this.renderAll();
+  },
+
+  renderNav() {
+    const items = [
+      ['add', state.editId ? '✏️' : '➕', state.editId ? '編輯中' : '新增'],
+      ['loan', '🏦', '貸款'],
+      ['list', '📋', '明細'],
+      ['chart', '📊', '統計'],
+    ];
+    $('#nav').innerHTML = items.map(([id,icon,label]) =>
+      `<button class="nav-btn ${state.tab===id?'on':''}" onclick="app.switchTab('${id}')"><span class="nav-icon">${icon}</span>${label}</button>`
+    ).join('');
+  },
+
+  renderStats() {
+    const total = state.recs.reduce((s,r) => s+r.amt, 0);
+    const curTm = tm();
+    const mAmt = state.recs.filter(r => r.date.slice(0,7) === curTm).reduce((s,r)=>s+r.amt,0);
+    const oAmt = state.recs.filter(r => r.type === 'o').reduce((s,r)=>s+r.amt,0);
+    const mo = state.loan ? Math.round(calcMo(state.loan.price-state.loan.down, state.loan.rate, state.loan.months)) : 0;
+    const data = [
+      ['總花費', `$${total.toLocaleString()}`, `${state.recs.length} 筆`],
+      ['本月日常', `$${mAmt.toLocaleString()}`, curTm],
+      ['本月擁車成本', `$${(mAmt+mo).toLocaleString()}`, mo?`含月供 $${mo.toLocaleString()}`:'未設貸款'],
+      ['一次性改裝', `$${oAmt.toLocaleString()}`, ''],
+    ];
+    $('#stats').innerHTML = data.map(([l,v,s]) =>
+      `<div class="stat"><div class="stat-l">${l}</div><div class="stat-v">${v}</div>${s?`<div class="stat-s">${s}</div>`:''}</div>`
+    ).join('');
+  },
+
+  renderLoan() {
+    const el = $('#loan-display');
+    if (!state.loan) { el.innerHTML = '<div class="empty">尚未設定貸款</div>'; return; }
+    const p = state.loan.price - state.loan.down;
+    const moA = calcMo(p, state.loan.rate, state.loan.months);
+    const int = moA * state.loan.months - p;
+    const paid = Math.max(0, Math.round((new Date() - new Date(state.loan.start)) / (1000*60*60*24*30.44)));
+    const rem = Math.max(0, state.loan.months - paid);
+    const pct = Math.round(Math.min(paid/state.loan.months, 1) * 100);
+    el.innerHTML = `<div class="loan-card">
+      <div class="loan-row"><span class="loan-k">每月應繳</span><span class="loan-v" style="color:#378ADD;font-size:22px">$${Math.round(moA).toLocaleString()}</span></div>
+      <div class="loan-row"><span class="loan-k">貸款金額</span><span class="loan-v">$${p.toLocaleString()}</span></div>
+      <div class="loan-row"><span class="loan-k">總利息</span><span class="loan-v">$${Math.round(int).toLocaleString()}</span></div>
+      <div class="loan-row"><span class="loan-k">剩餘 ${rem} 期</span><span class="loan-v">$${Math.round(rem*moA).toLocaleString()}</span></div>
+      <div class="progress"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#aaa"><span>已還 ${paid} 期</span><span>${pct}%</span></div>
+    </div>`;
+  },
+
+  renderList() {
+    const months = [...new Set(state.recs.map(r => r.date.slice(0,7)))].sort().reverse();
+    const mSel = $('#m-filter');
+    mSel.innerHTML = '<option value="all">全部月份</option>' + months.map(m => `<option value="${m}">${m}</option>`).join('');
+    mSel.value = state.mFilter;
+    $('#t-filter').value = state.tFilter;
+
+    const sorts = [['date_desc','日期↓'],['date_asc','日期↑'],['amt_desc','金額↓'],['amt_asc','金額↑']];
+    $('#sort-row').innerHTML = sorts.map(([v,l]) =>
+      `<button class="sort-btn ${state.sort===v?'on':''}" onclick="state.sort='${v}';app.renderList()">${l}</button>`
+    ).join('');
+
+    const search = $('#search').value;
+    state.mFilter = mSel.value;
+    state.tFilter = $('#t-filter').value;
+
+    let d = state.recs.filter(r =>
+      (state.mFilter==='all'||r.date.slice(0,7)===state.mFilter) &&
+      (state.tFilter==='all'||r.type===state.tFilter) &&
+      (!search || r.cat.includes(search) || (r.note||'').includes(search) || (r.brand||'').includes(search) || r.date.includes(search))
+    );
+    if (state.sort==='date_desc') d.sort((a,b)=>b.date.localeCompare(a.date));
+    else if (state.sort==='date_asc') d.sort((a,b)=>a.date.localeCompare(b.date));
+    else if (state.sort==='amt_desc') d.sort((a,b)=>b.amt-a.amt);
+    else d.sort((a,b)=>a.amt-b.amt);
+
+    $('#list-count').textContent = d.length + ' 筆';
+    if (!d.length) { $('#list').innerHTML = '<div class="empty">沒有符合的記錄</div>'; return; }
+    $('#list').innerHTML = d.map(r => {
+      const sw = state.swipedId === r.id;
+      return `<div class="item">
+        <div class="item-actions">
+          <button class="edit" onclick="app.openEdit(${r.id})"><span style="font-size:16px">✏️</span>編輯</button>
+          <button class="del" onclick="app.delRec(${r.id})"><span style="font-size:16px">🗑️</span>刪除</button>
+        </div>
+        <div class="item-body ${sw?'swiped':''}" ontouchstart="app.touchStart(event,${r.id})" ontouchend="app.touchEnd(event,${r.id})">
+          <div class="cat-dot" style="background:${CB[r.cat]||'#eee'}">${CI[r.cat]||'📦'}</div>
+          <div class="item-info">
+            <div class="item-name">${r.cat}${r.brand?` · ${r.brand}`:''}</div>
+            <div class="item-meta">${r.date}<span class="pill ${r.type==='o'?'pill-o':'pill-r'}">${r.type==='o'?'一次性':'日常'}</span>${r.note?` · ${r.note}`:''}</div>
+          </div>
+          <div class="item-right">
+            <div class="item-amt" style="color:${CC[r.cat]||'#111'}">$${r.amt.toLocaleString()}</div>
+            <div class="hint">← 滑動</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  },
+
+  renderChart() {
+    const months = [...new Set(state.recs.map(r => r.date.slice(0,7)))].sort().reverse();
+    const cm = $('#c-month');
+    cm.innerHTML = '<option value="all">全部月份</option>' + months.map(m => `<option value="${m}">${m}</option>`).join('');
+    cm.value = state.cMonth;
+    state.cMonth = cm.value;
+
+    // Trend
+    const bm = {};
+    state.recs.forEach(r => { const m = r.date.slice(0,7); bm[m] = (bm[m]||0) + r.amt; });
+    const trend = Object.entries(bm).sort(([a],[b]) => a.localeCompare(b)).slice(-6);
+    const curTm = tm();
+    const trendEl = $('#trend-container');
+    if (trend.length > 1) {
+      const maxT = Math.max(...trend.map(([,v])=>v), 1);
+      trendEl.innerHTML = `<div class="sect-title" style="margin-bottom:10px">近 ${trend.length} 個月趨勢</div>
+        <div class="trend-row">${trend.map(([m,v]) =>
+          `<div class="trend-bar"><div class="trend-v">${v>=10000?Math.round(v/1000)+'k':v>=1000?(v/1000).toFixed(1)+'k':v}</div><div class="trend-fill" style="height:${Math.round(v/maxT*64)+4}px;opacity:${m===curTm?1:0.45}"></div></div>`
+        ).join('')}</div>
+        <div class="trend-labels">${trend.map(([m]) => `<div class="trend-label ${m===curTm?'cur':''}">${m.slice(5)}</div>`).join('')}</div>`;
+    } else { trendEl.innerHTML = ''; }
+
+    // Bars
+    const filtered = state.recs.filter(r => state.cMonth==='all' || r.date.slice(0,7)===state.cMonth);
+    const grand = filtered.reduce((s,r)=>s+r.amt, 0);
+    const daily = {}, once = {};
+    filtered.forEach(r => { if (r.type==='o') once[r.cat] = (once[r.cat]||0)+r.amt; else daily[r.cat] = (daily[r.cat]||0)+r.amt; });
+    const maxV = Math.max(...Object.values({...daily,...once}), 1);
+
+    const mkSec = (title, obj) => {
+      if (!Object.keys(obj).length) return '';
+      const tot = Object.values(obj).reduce((a,b)=>a+b, 0);
+      const rows = Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([c,v]) =>
+        `<div class="bar-row">
+          <div class="bar-label">${CI[c]} ${c}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round(v/maxV*100)}%;background:${CC[c]||'#888'}"></div></div>
+          <div class="bar-val">$${v.toLocaleString()} <span style="color:#aaa">${grand?Math.round(v/grand*100):0}%</span></div>
+        </div>`
+      ).join('');
+      return `<div class="sect-title" style="margin:14px 0 8px">${title}・$${tot.toLocaleString()}</div>${rows}`;
+    };
+
+    $('#chart').innerHTML = !grand
+      ? '<div class="empty">尚無資料</div>'
+      : mkSec('日常費用', daily) + mkSec('一次性', once) +
+        `<div style="text-align:right;font-size:13px;color:#888;margin-top:12px;padding-top:10px;border-top:0.5px solid #e0e0e0">總計 $${grand.toLocaleString()}</div>`;
+  },
+
+  renderAll() {
+    this.renderStats();
+    this.renderNav();
+    this.renderEditBar();
+    this.renderCopyLast();
+    this.renderCats();
+    if (state.tab === 'loan') this.renderLoan();
+    if (state.tab === 'list') this.renderList();
+    if (state.tab === 'chart') this.renderChart();
+  },
+};
+
+// Init
+$('#f-date').value = today();
+$('#l-start').value = today();
+app.renderCats();
+app.renderNav();
+document.body.addEventListener('click', e => {
+  if (state.swipedId && !e.target.closest('.item')) { state.swipedId = null; app.renderList(); }
+});
+app.load();
+</script>
+</body>
+</html>

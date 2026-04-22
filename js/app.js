@@ -11,6 +11,7 @@ import {
   toast,
 } from './util.js';
 import { categoriesOfType, categoryMeta } from './categories.js';
+import { computeEvStats } from './evStats.js';
 import { api } from './api.js';
 
 const state = {
@@ -103,6 +104,7 @@ const app = {
 
   selCat(c) {
     state.fCat = c;
+    $('#ev-fields').classList.toggle('hide', c !== '充電');
     this.renderCats();
   },
 
@@ -129,6 +131,9 @@ const app = {
     $('#f-date').value = r.date;
     $('#f-brand').value = r.brand || '';
     $('#f-note').value = r.note || '';
+    $('#f-kwh').value = r.kwh || '';
+    $('#f-odo').value = r.odo || '';
+    $('#ev-fields').classList.toggle('hide', r.cat !== '充電');
     this.renderCats();
   },
 
@@ -170,6 +175,8 @@ const app = {
     $('#f-amt').value = '';
     $('#f-note').value = '';
     $('#f-brand').value = '';
+    $('#f-kwh').value = '';
+    $('#f-odo').value = '';
   },
 
   submitForm() {
@@ -178,6 +185,8 @@ const app = {
     const date = $('#f-date').value;
     if (amt <= 0) return toast('請填寫有效金額', 'error');
     if (!date) return toast('請填寫日期', 'error');
+    const kwh = safeParseFloat($('#f-kwh').value);
+    const odo = safeParseInt($('#f-odo').value);
     const rec = {
       cat: state.fCat,
       amt,
@@ -185,6 +194,8 @@ const app = {
       brand: $('#f-brand').value.trim(),
       note: $('#f-note').value.trim(),
       type: state.fType,
+      ...(state.fCat === '充電' && kwh > 0 ? { kwh } : {}),
+      ...(state.fCat === '充電' && odo > 0 ? { odo } : {}),
     };
     if (state.editId) {
       state.recs = state.recs.map((r) => (r.id === state.editId ? { ...r, ...rec } : r));
@@ -217,6 +228,9 @@ const app = {
     $('#f-date').value = r.date;
     $('#f-brand').value = r.brand || '';
     $('#f-note').value = r.note || '';
+    $('#f-kwh').value = r.kwh || '';
+    $('#f-odo').value = r.odo || '';
+    $('#ev-fields').classList.toggle('hide', r.cat !== '充電');
     this.switchTab('add');
   },
 
@@ -329,6 +343,33 @@ const app = {
       .join('');
   },
 
+  renderEvStats() {
+    const el = $('#ev-stats');
+    if (!el) return;
+    const ym = state.cMonth === 'all' ? null : state.cMonth;
+    const s = computeEvStats(state.recs, ym);
+    if (s.sessions === 0) {
+      el.innerHTML = '';
+      return;
+    }
+    const fmt = (n, digits = 0) =>
+      n > 0
+        ? n.toLocaleString('zh-TW', { maximumFractionDigits: digits, minimumFractionDigits: digits })
+        : '—';
+    const scope = ym ? ym : '累計';
+    el.innerHTML = `<div class="ev-stats">
+      <div class="sect-title" style="margin-bottom:8px">⚡ EV 指標 · ${escapeHtml(scope)}</div>
+      <div class="ev-grid">
+        <div class="ev-cell"><div class="ev-l">充電次數</div><div class="ev-v">${s.sessions}</div></div>
+        <div class="ev-cell"><div class="ev-l">總度數</div><div class="ev-v">${fmt(s.totalKwh, 1)} <span class="ev-u">kWh</span></div></div>
+        <div class="ev-cell"><div class="ev-l">里程</div><div class="ev-v">${fmt(s.km)} <span class="ev-u">km</span></div></div>
+        <div class="ev-cell"><div class="ev-l">元/kWh</div><div class="ev-v">$${fmt(s.pricePerKwh, 2)}</div></div>
+        <div class="ev-cell"><div class="ev-l">元/km</div><div class="ev-v">$${fmt(s.costPerKm, 2)}</div></div>
+        <div class="ev-cell"><div class="ev-l">kWh/100km</div><div class="ev-v">${fmt(s.kwhPer100km, 1)}</div></div>
+      </div>
+    </div>`;
+  },
+
   renderLoan() {
     const el = $('#loan-display');
     if (!state.loan) {
@@ -411,7 +452,7 @@ const app = {
             <div class="cat-dot" style="background:${meta.bg}" aria-hidden="true">${meta.icon}</div>
             <div class="item-info">
               <div class="item-name">${escapeHtml(r.cat)}${r.brand ? ` · ${escapeHtml(r.brand)}` : ''}</div>
-              <div class="item-meta">${escapeHtml(r.date)}<span class="pill ${r.type === 'o' ? 'pill-o' : 'pill-r'}">${r.type === 'o' ? '一次性' : '日常'}</span>${r.note ? ` · ${escapeHtml(r.note)}` : ''}</div>
+              <div class="item-meta">${escapeHtml(r.date)}<span class="pill ${r.type === 'o' ? 'pill-o' : 'pill-r'}">${r.type === 'o' ? '一次性' : '日常'}</span>${r.kwh ? `<span class="pill pill-kwh">${r.kwh} kWh</span>` : ''}${r.odo ? `<span class="pill pill-odo">${r.odo.toLocaleString()} km</span>` : ''}${r.note ? ` · ${escapeHtml(r.note)}` : ''}</div>
             </div>
             <div class="item-right">
               <div class="item-amt" style="color:${meta.color}">$${r.amt.toLocaleString()}</div>
@@ -431,6 +472,9 @@ const app = {
       months.map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
     cm.value = state.cMonth;
     state.cMonth = cm.value;
+
+    // EV metrics (charging only) — respects month filter
+    this.renderEvStats();
 
     // Trend
     const bm = {};

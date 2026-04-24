@@ -409,16 +409,22 @@ const app = {
     else if (!loanActive) costSub = `貸款 ${state.loan.start} 起算(月供 $${moFull.toLocaleString()})`;
     else costSub = `含月供 $${moFull.toLocaleString()}`;
 
+    // Hero comes first — the one number that matters
     const data = [
-      ['總花費', `$${total.toLocaleString()}`, `${state.recs.length} 筆`],
-      ['本月日常', `$${mAmt.toLocaleString()}`, curTm],
-      ['本月擁車成本', `$${(mAmt + moEffective).toLocaleString()}`, costSub],
-      ['一次性改裝', `$${oAmt.toLocaleString()}`, ''],
+      {
+        label: '本月擁車成本',
+        value: `$${(mAmt + moEffective).toLocaleString()}`,
+        sub: costSub,
+        hero: true,
+      },
+      { label: '本月日常', value: `$${mAmt.toLocaleString()}`, sub: curTm },
+      { label: '總花費', value: `$${total.toLocaleString()}`, sub: `${state.recs.length} 筆` },
+      { label: '一次性改裝', value: `$${oAmt.toLocaleString()}`, sub: '' },
     ];
     $('#stats').innerHTML = data
       .map(
-        ([l, v, s]) =>
-          `<div class="stat"><div class="stat-l">${escapeHtml(l)}</div><div class="stat-v">${escapeHtml(v)}</div>${s ? `<div class="stat-s">${escapeHtml(s)}</div>` : ''}</div>`
+        (d) =>
+          `<div class="stat${d.hero ? ' hero' : ''}"><div class="stat-l">${escapeHtml(d.label)}</div><div class="stat-v">${escapeHtml(d.value)}</div>${d.sub ? `<div class="stat-s">${escapeHtml(d.sub)}</div>` : ''}</div>`
       )
       .join('');
   },
@@ -478,7 +484,7 @@ const app = {
     const moLabel = notStarted ? '每月將繳' : '每月應繳';
     el.innerHTML = `<div class="loan-card">
       ${banner}
-      <div class="loan-row"><span class="loan-k">${moLabel}</span><span class="loan-v" style="color:var(--primary);font-size:22px">$${Math.round(moA).toLocaleString()}</span></div>
+      <div class="loan-row"><span class="loan-k">${moLabel}</span><span class="loan-v loan-hero">$${Math.round(moA).toLocaleString()}</span></div>
       <div class="loan-row"><span class="loan-k">貸款金額</span><span class="loan-v">$${p.toLocaleString()}</span></div>
       <div class="loan-row"><span class="loan-k">總利息</span><span class="loan-v">$${Math.round(int).toLocaleString()}</span></div>
       <div class="loan-row"><span class="loan-k">${notStarted ? '總期數' : `剩餘 ${rem} 期`}</span><span class="loan-v">$${Math.round((notStarted ? state.loan.months : rem) * moA).toLocaleString()}</span></div>

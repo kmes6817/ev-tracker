@@ -286,12 +286,18 @@ button {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.32), transparent);
 }
 .stat.hero::after {
-  content: '⚡';
+  /* SVG bolt icon rendered via background-image mask, inherits color. */
+  content: '';
   position: absolute;
-  top: 12px;
-  right: 16px;
-  font-size: 20px;
-  opacity: 0.35;
+  top: 14px;
+  right: 18px;
+  width: 22px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.38);
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><polyline points='13,2 4,14 12,14 11,22 20,10 12,10 13,2'/></svg>")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><polyline points='13,2 4,14 12,14 11,22 20,10 12,10 13,2'/></svg>")
+    center / contain no-repeat;
 }
 .stat.hero .stat-l {
   color: rgba(255, 255, 255, 0.65);
@@ -472,45 +478,110 @@ button {
   line-height: 1;
 }
 
-/* ---------- Quick charge CTA (under stats) ---------- */
-.quick-charge {
-  display: flex;
+/* ---------- Icon utilities ---------- */
+/* Any <svg> rendered inline — default sizing + currentColor */
+svg {
+  display: inline-block;
+  vertical-align: middle;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+/* Small icon rendered beside text (e.g. '[icon] 匯出 CSV') */
+.inline-ico {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  margin-top: 10px;
-  padding: 13px 16px;
-  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  margin-right: 6px;
+}
+.inline-ico svg {
+  width: 16px;
+  height: 16px;
+}
+/* Category icon in picker buttons */
+.cat-btn .ci svg {
+  width: 22px;
+  height: 22px;
+}
+/* Category dot in list items */
+.cat-dot svg {
+  width: 20px;
+  height: 20px;
+}
+/* Chevrons in month switcher + hero expand */
+.hero-month-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.hero-chevron svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.25s;
+}
+.stat.hero.expanded .hero-chevron svg {
+  transform: rotate(180deg);
+}
+/* Nav icons */
+.nav-btn svg {
+  width: 22px;
+  height: 22px;
+}
+/* Swipe action buttons */
+.item-actions .act-ico svg {
+  width: 18px;
+  height: 18px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+/* Hero expanded category row icon */
+.hero-cat-ico svg {
+  width: 16px;
+  height: 16px;
+  color: rgba(255, 255, 255, 0.85);
+}
+/* Chart bar label icon */
+.bar-label-ico {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.bar-label-ico svg {
+  width: 14px;
+  height: 14px;
+}
+/* Empty state icon */
+.empty-state .empty-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--s-3);
+}
+.empty-state .empty-icon svg {
+  width: 44px;
+  height: 44px;
+  color: var(--text-ghost);
+  opacity: 0.7;
+}
+/* Onboarding icon (large hero-style) */
+.onboarding-ico {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.onboarding-ico svg {
+  width: 36px;
+  height: 36px;
   color: var(--primary);
-  border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
-  border-radius: 14px;
+}
+.onboarding-title {
   font-size: var(--t-ui);
   font-weight: var(--w-bold);
   letter-spacing: var(--tr-tight);
-  min-height: 52px;
-  transition:
-    background 0.15s,
-    transform 0.15s;
-  font-family: inherit;
+  color: var(--text);
+  margin-bottom: 4px;
 }
-.quick-charge:active {
-  transform: scale(0.98);
-  background: color-mix(in srgb, var(--primary) 20%, var(--surface));
-}
-.quick-charge-icon {
-  font-size: 22px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-.quick-charge-text {
-  flex: 1;
-  text-align: left;
-}
-.quick-charge-arrow {
-  font-size: 20px;
-  opacity: 0.6;
-  font-weight: var(--w-regular);
-  flex-shrink: 0;
+.onboarding-sub {
+  font-size: var(--t-body);
+  color: var(--text-soft);
+  line-height: 1.5;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -686,8 +757,9 @@ select:focus {
     transform 0.2s;
 }
 .cat-btn .ci {
-  font-size: 20px;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 1px;
   line-height: 1;
 }

@@ -2,7 +2,9 @@
 // Uses RFC 4180 quoting: fields with comma, quote, CR, or LF get wrapped in
 // double quotes; literal quotes are doubled.
 
-const HEADERS = ['id', 'date', 'type', 'cat', 'amt', 'kwh', 'odo', 'brand', 'note'];
+const HEADERS = ['id', 'date', 'type', 'cat', 'amt', 'kwh', 'odo', 'desc'];
+// Legacy columns we still accept on import and merge into `desc`.
+const LEGACY_DESC_COLS = ['brand', 'note'];
 
 const quote = (v) => {
   if (v == null) return '';
@@ -80,21 +82,27 @@ export function csvToRecords(text) {
   const lines = splitLines(text);
   if (!lines.length) return [];
   const header = parseLine(lines[0]).map((h) => h.trim().toLowerCase());
-  const idx = Object.fromEntries(HEADERS.map((h) => [h, header.indexOf(h)]));
+  const allCols = [...HEADERS, ...LEGACY_DESC_COLS];
+  const idx = Object.fromEntries(allCols.map((h) => [h, header.indexOf(h)]));
   return lines.slice(1).map((line) => {
     const cols = parseLine(line);
     const get = (key) => {
       const i = idx[key];
       return i >= 0 ? cols[i] : '';
     };
+    // Desc comes from the desc column, or falls back to joining legacy brand/note
+    let desc = get('desc') || '';
+    if (!desc) {
+      const parts = LEGACY_DESC_COLS.map((c) => get(c)).filter((x) => x && x.trim());
+      if (parts.length) desc = parts.join(' · ');
+    }
     const rec = {
       id: get('id') || undefined,
       date: get('date'),
       type: get('type') || 'r',
       cat: get('cat'),
       amt: Number(get('amt')) || 0,
-      brand: get('brand') || '',
-      note: get('note') || '',
+      desc,
     };
     const kwh = Number(get('kwh'));
     const odo = Number(get('odo'));

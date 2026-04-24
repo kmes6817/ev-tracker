@@ -135,7 +135,6 @@ const app = {
     state.fType = t;
     state.fCat = '';
     document.querySelectorAll('.type-btn').forEach((b) => b.classList.toggle('on', b.dataset.type === t));
-    $('#brand-field').classList.toggle('hide', t !== 'o');
     $('#ev-fields').classList.add('hide'); // kwh/odo only relevant when cat === '充電'
     this.renderCats();
   },
@@ -158,6 +157,14 @@ const app = {
         </button>`;
       })
       .join('');
+  },
+
+  /** Legacy brand+note → desc migration helper.
+   *  Records created before schema v3 may still carry .brand and .note;
+   *  collapse them into a single human-readable string. */
+  _legacyDesc(r) {
+    const parts = [r.brand, r.note].filter((x) => x && x.trim());
+    return parts.join(' · ');
   },
 
   /** Quick charging shortcut — skips category picking, focuses amount. */
@@ -203,8 +210,7 @@ const app = {
 
   clearForm() {
     $('#f-amt').value = '';
-    $('#f-note').value = '';
-    $('#f-brand').value = '';
+    $('#f-desc').value = '';
     $('#f-kwh').value = '';
     $('#f-odo').value = '';
   },
@@ -227,8 +233,7 @@ const app = {
       cat: state.fCat,
       amt,
       date,
-      brand: $('#f-brand').value.trim(),
-      note: $('#f-note').value.trim(),
+      desc: $('#f-desc').value.trim(),
       type: state.fType,
       ...(state.fCat === '充電' && kwh > 0 ? { kwh } : {}),
       ...(state.fCat === '充電' && odo > 0 ? { odo } : {}),
@@ -263,8 +268,7 @@ const app = {
     state.fCat = r.cat;
     $('#f-amt').value = r.amt;
     $('#f-date').value = r.date;
-    $('#f-brand').value = r.brand || '';
-    $('#f-note').value = r.note || '';
+    $('#f-desc').value = r.desc || this._legacyDesc(r);
     $('#f-kwh').value = r.kwh || '';
     $('#f-odo').value = r.odo || '';
     $('#ev-fields').classList.toggle('hide', r.cat !== '充電');
@@ -662,8 +666,7 @@ const app = {
         (state.tFilter === 'all' || r.type === state.tFilter) &&
         (!search ||
           r.cat.includes(search) ||
-          (r.note || '').includes(search) ||
-          (r.brand || '').includes(search) ||
+          (r.desc || this._legacyDesc(r) || '').includes(search) ||
           r.date.includes(search))
     );
     if (state.sort === 'date_desc') d.sort((a, b) => b.date.localeCompare(a.date));
@@ -700,8 +703,11 @@ const app = {
           <div class="item-body ${sw ? 'swiped' : ''}" data-swipe-id="${safeId}">
             <div class="cat-dot" style="background:${meta.bg}" aria-hidden="true">${meta.icon}</div>
             <div class="item-info">
-              <div class="item-name">${escapeHtml(r.cat)}${r.brand ? ` · ${escapeHtml(r.brand)}` : ''}</div>
-              <div class="item-meta">${escapeHtml(r.date)}<span class="pill ${r.type === 'o' ? 'pill-o' : 'pill-r'}">${r.type === 'o' ? '一次性' : '日常'}</span>${r.kwh ? `<span class="pill pill-kwh">${r.kwh} kWh</span>` : ''}${r.odo ? `<span class="pill pill-odo">${r.odo.toLocaleString()} km</span>` : ''}${r.note ? ` · ${escapeHtml(r.note)}` : ''}</div>
+              <div class="item-name">${escapeHtml(r.cat)}${(() => {
+                const d = r.desc || this._legacyDesc(r);
+                return d ? ` · ${escapeHtml(d)}` : '';
+              })()}</div>
+              <div class="item-meta">${escapeHtml(r.date)}<span class="pill ${r.type === 'o' ? 'pill-o' : 'pill-r'}">${r.type === 'o' ? '一次性' : '日常'}</span>${r.kwh ? `<span class="pill pill-kwh">${r.kwh} kWh</span>` : ''}${r.odo ? `<span class="pill pill-odo">${r.odo.toLocaleString()} km</span>` : ''}</div>
             </div>
             <div class="item-right">
               <div class="item-amt" style="color:${meta.color}">$${r.amt.toLocaleString()}</div>

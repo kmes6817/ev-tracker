@@ -1,38 +1,99 @@
 :root {
-  --bg: #f0f0ee;
+  /* ---------- Typography ---------- */
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Segoe UI', sans-serif;
+  --font-num: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+
+  /* Type scale — 5 steps only */
+  --t-caption: 11px;
+  --t-body: 13px;
+  --t-ui: 15px;
+  --t-title: 19px;
+  --t-hero: 32px;
+
+  /* Weights */
+  --w-regular: 400;
+  --w-medium: 500;
+  --w-bold: 640;
+
+  /* Tracking */
+  --tr-tight: -0.02em;
+  --tr-normal: 0;
+  --tr-wide: 0.04em;
+
+  /* ---------- Spacing (4px baseline) ---------- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+
+  /* ---------- Colors (light mode) ---------- */
+  --bg: #f7f7f5;
   --surface: #ffffff;
-  --surface-2: #f5f5f3;
-  --text: #111111;
-  --text-muted: #666666;
-  --text-soft: #888888;
-  --text-ghost: #aaaaaa;
-  --border: #e0e0e0;
-  --border-soft: #f0f0ee;
-  --primary: #378add;
-  --primary-bg: #e6f1fb;
+  --surface-2: #f0f0ec;
+  --text: #0f0f14;
+  --text-muted: #5c5c66;
+  --text-soft: #8a8a95;
+  --text-ghost: #b4b4bd;
+  --border: #e4e4e0;
+  --border-soft: #eeeeea;
+
+  --primary: #2c7fd6;
+  --primary-bg: #e6f0fb;
   --primary-text: #185fa5;
-  --success: #1d9e75;
-  --warn-bg: #fff8e1;
+  --accent: #d97a0f; /* amber — EV/energy signal */
+  --success: #0e8f63;
+  --warn-bg: #fff4e0;
   --warn-border: #ef9f27;
-  --warn-text: #ba7517;
-  --danger: #e24b4a;
+  --warn-text: #9e5f0e;
+  --danger: #d93a38;
+
+  /* Elevation */
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --elev-2: 0 2px 4px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #121212;
-    --surface: #1e1e1e;
-    --surface-2: #2a2a2a;
-    --text: #e8e8e8;
-    --text-muted: #b0b0b0;
-    --text-soft: #888888;
-    --text-ghost: #666666;
-    --border: #333333;
-    --border-soft: #262626;
-    --primary-bg: #1a2f45;
-    --primary-text: #6ab0f0;
-    --warn-bg: #3a2e10;
+    --bg: #0b0c0f;
+    --surface: #17181c;
+    --surface-2: #1f2025;
+    --text: #e9e9ef;
+    --text-muted: #a0a0aa;
+    --text-soft: #7a7a82;
+    --text-ghost: #55555b;
+    --border: #2a2b31;
+    --border-soft: #202126;
+
+    --primary: #6fa8f5;
+    --primary-bg: #1a2f4f;
+    --primary-text: #9fc4f8;
+    --accent: #f5a637;
+    --success: #3fd19b;
+    --warn-bg: #2e220a;
+    --warn-border: #c38618;
+    --warn-text: #e9b259;
+    --danger: #ff6b6b;
+
+    /* On dark, use subtle top highlight + stronger drop shadow for depth */
+    --elev-1: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 1px 2px rgba(0, 0, 0, 0.4);
+    --elev-2: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 16px rgba(0, 0, 0, 0.5);
   }
+}
+
+/* Numbers use tabular figures everywhere they appear — so $1,234 stays aligned
+   vertically across rows in lists and stat cards. */
+.num,
+.stat-v,
+.item-amt,
+.loan-v,
+.ev-v,
+.bar-val,
+.trend-v {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
 }
 
 * {
@@ -45,11 +106,13 @@
 html,
 body {
   background: var(--bg);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-ui);
   color: var(--text);
   /* Tell the browser to theme native form controls (date picker icon,
      scrollbars, etc.) according to OS preference. */
   color-scheme: light dark;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -136,28 +199,58 @@ button {
 }
 .stat {
   background: var(--surface);
-  border-radius: 10px;
-  padding: 10px 14px;
+  border-radius: 12px;
+  padding: var(--s-3) var(--s-4);
+  box-shadow: var(--elev-1);
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 .stat-l {
-  font-size: 12px;
+  font-size: var(--t-caption);
+  font-weight: var(--w-medium);
+  letter-spacing: var(--tr-wide);
   color: var(--text-soft);
-  margin-bottom: 3px;
+  text-transform: uppercase;
+  margin-bottom: var(--s-1);
 }
 .stat-v {
-  font-size: 19px;
-  font-weight: 500;
+  font-size: var(--t-title);
+  font-weight: var(--w-medium);
+  letter-spacing: var(--tr-tight);
+  color: var(--text);
+  line-height: 1.1;
 }
 .stat-s {
-  font-size: 11px;
+  font-size: var(--t-caption);
   color: var(--text-ghost);
-  margin-top: 2px;
+  margin-top: 3px;
+}
+
+/* Hero stat — spans 2 columns, 1.7× weight/size. Use for the "本月擁車成本" card. */
+.stat.hero {
+  grid-column: span 2;
+  background: var(--surface);
+  padding: var(--s-4) var(--s-5);
+  box-shadow: var(--elev-2);
+}
+.stat.hero .stat-v {
+  font-family: var(--font-num);
+  font-size: var(--t-hero);
+  font-weight: var(--w-bold);
+  letter-spacing: var(--tr-tight);
+  color: var(--primary);
+}
+.stat.hero .stat-l {
+  color: var(--text-muted);
 }
 
 /* ---------- Card ---------- */
 .card {
   background: var(--surface);
   border-radius: 16px;
+  box-shadow: var(--elev-1);
   margin: 0 12px;
   padding: 16px;
 }
@@ -382,8 +475,15 @@ select:focus {
   color: var(--text-muted);
 }
 .loan-v {
-  font-weight: 500;
+  font-family: var(--font-num);
+  font-weight: var(--w-medium);
   color: var(--text);
+  letter-spacing: var(--tr-tight);
+}
+.loan-v.loan-hero {
+  font-size: 26px;
+  font-weight: var(--w-bold);
+  color: var(--primary);
 }
 .loan-status {
   font-size: 12px;
@@ -577,30 +677,39 @@ select:focus {
   min-width: 0;
 }
 .ev-l {
-  font-size: 11px;
+  font-size: var(--t-caption);
+  font-weight: var(--w-medium);
+  letter-spacing: var(--tr-wide);
+  text-transform: uppercase;
   color: var(--text-soft);
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 .ev-v {
-  font-size: 16px;
-  font-weight: 500;
+  font-family: var(--font-num);
+  font-size: var(--t-ui);
+  font-weight: var(--w-medium);
   color: var(--text);
+  letter-spacing: var(--tr-tight);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .ev-u {
+  font-family: var(--font-ui);
   font-size: 10px;
   color: var(--text-ghost);
-  font-weight: 400;
+  font-weight: var(--w-regular);
+  margin-left: 1px;
 }
 .item-right {
   text-align: right;
   flex-shrink: 0;
 }
 .item-amt {
-  font-size: 15px;
-  font-weight: 500;
+  font-family: var(--font-num);
+  font-size: var(--t-ui);
+  font-weight: var(--w-medium);
+  letter-spacing: var(--tr-tight);
 }
 .hint {
   font-size: 10px;
@@ -630,6 +739,7 @@ select:focus {
   gap: 2px;
 }
 .trend-v {
+  font-family: var(--font-num);
   font-size: 10px;
   color: var(--text-soft);
   line-height: 1;
@@ -683,8 +793,10 @@ select:focus {
   transition: width 0.3s;
 }
 .bar-val {
-  font-size: 12px;
-  font-weight: 500;
+  font-family: var(--font-num);
+  font-size: var(--t-body);
+  font-weight: var(--w-medium);
+  letter-spacing: var(--tr-tight);
   width: 72px;
   text-align: right;
   flex-shrink: 0;
@@ -766,6 +878,97 @@ select:focus {
 
 .hide {
   display: none;
+}
+
+/* ---------- Empty state ---------- */
+.empty-state {
+  padding: var(--s-8) var(--s-4);
+  text-align: center;
+  color: var(--text-soft);
+}
+.empty-icon {
+  font-size: 40px;
+  margin-bottom: var(--s-3);
+  opacity: 0.45;
+  filter: grayscale(0.3);
+}
+.empty-title {
+  font-size: var(--t-ui);
+  font-weight: var(--w-medium);
+  color: var(--text-muted);
+  margin-bottom: var(--s-1);
+}
+.empty-sub {
+  font-size: var(--t-body);
+  color: var(--text-soft);
+  max-width: 280px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* ---------- Motion — first-paint stagger ---------- */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes progress-sweep {
+  from {
+    width: 0;
+  }
+}
+.stats > .stat {
+  animation: rise 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.stats > .stat:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stats > .stat:nth-child(2) {
+  animation-delay: 40ms;
+}
+.stats > .stat:nth-child(3) {
+  animation-delay: 80ms;
+}
+.stats > .stat:nth-child(4) {
+  animation-delay: 120ms;
+}
+.progress-fill {
+  animation: progress-sweep 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .stats > .stat,
+  .progress-fill {
+    animation: none;
+  }
+}
+
+/* ---------- Nav active indicator ---------- */
+.nav-btn {
+  position: relative;
+}
+.nav-btn.on::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 30%;
+  right: 30%;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 0 0 2px 2px;
+}
+
+/* ---------- Sync bar — glass blur ---------- */
+@supports (backdrop-filter: blur(12px)) {
+  .sync-bar {
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+  }
 }
 
 /* ---------- Pull to refresh ---------- */

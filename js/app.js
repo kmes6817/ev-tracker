@@ -409,16 +409,22 @@ const app = {
     else if (!loanActive) costSub = `貸款 ${state.loan.start} 起算(月供 $${moFull.toLocaleString()})`;
     else costSub = `含月供 $${moFull.toLocaleString()}`;
 
+    // Hero comes first — the one number that matters
     const data = [
-      ['總花費', `$${total.toLocaleString()}`, `${state.recs.length} 筆`],
-      ['本月日常', `$${mAmt.toLocaleString()}`, curTm],
-      ['本月擁車成本', `$${(mAmt + moEffective).toLocaleString()}`, costSub],
-      ['一次性改裝', `$${oAmt.toLocaleString()}`, ''],
+      {
+        label: '本月擁車成本',
+        value: `$${(mAmt + moEffective).toLocaleString()}`,
+        sub: costSub,
+        hero: true,
+      },
+      { label: '本月日常', value: `$${mAmt.toLocaleString()}`, sub: curTm },
+      { label: '總花費', value: `$${total.toLocaleString()}`, sub: `${state.recs.length} 筆` },
+      { label: '一次性改裝', value: `$${oAmt.toLocaleString()}`, sub: '' },
     ];
     $('#stats').innerHTML = data
       .map(
-        ([l, v, s]) =>
-          `<div class="stat"><div class="stat-l">${escapeHtml(l)}</div><div class="stat-v">${escapeHtml(v)}</div>${s ? `<div class="stat-s">${escapeHtml(s)}</div>` : ''}</div>`
+        (d) =>
+          `<div class="stat${d.hero ? ' hero' : ''}"><div class="stat-l">${escapeHtml(d.label)}</div><div class="stat-v">${escapeHtml(d.value)}</div>${d.sub ? `<div class="stat-s">${escapeHtml(d.sub)}</div>` : ''}</div>`
       )
       .join('');
   },
@@ -453,7 +459,11 @@ const app = {
   renderLoan() {
     const el = $('#loan-display');
     if (!state.loan) {
-      el.innerHTML = '<div class="empty">尚未設定貸款</div>';
+      el.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">🏦</div>
+        <div class="empty-title">尚未設定貸款</div>
+        <div class="empty-sub">填入車價、期數就能算每月應繳與總擁車成本</div>
+      </div>`;
       return;
     }
     const p = state.loan.price - state.loan.down;
@@ -478,7 +488,7 @@ const app = {
     const moLabel = notStarted ? '每月將繳' : '每月應繳';
     el.innerHTML = `<div class="loan-card">
       ${banner}
-      <div class="loan-row"><span class="loan-k">${moLabel}</span><span class="loan-v" style="color:var(--primary);font-size:22px">$${Math.round(moA).toLocaleString()}</span></div>
+      <div class="loan-row"><span class="loan-k">${moLabel}</span><span class="loan-v loan-hero">$${Math.round(moA).toLocaleString()}</span></div>
       <div class="loan-row"><span class="loan-k">貸款金額</span><span class="loan-v">$${p.toLocaleString()}</span></div>
       <div class="loan-row"><span class="loan-k">總利息</span><span class="loan-v">$${Math.round(int).toLocaleString()}</span></div>
       <div class="loan-row"><span class="loan-k">${notStarted ? '總期數' : `剩餘 ${rem} 期`}</span><span class="loan-v">$${Math.round((notStarted ? state.loan.months : rem) * moA).toLocaleString()}</span></div>
@@ -530,7 +540,18 @@ const app = {
 
     $('#list-count').textContent = d.length + ' 筆';
     if (!d.length) {
-      $('#list').innerHTML = '<div class="empty">沒有符合的記錄</div>';
+      const hasFilter = search || state.mFilter !== 'all' || state.tFilter !== 'all';
+      $('#list').innerHTML = hasFilter
+        ? `<div class="empty-state">
+            <div class="empty-icon">🔎</div>
+            <div class="empty-title">沒有符合的記錄</div>
+            <div class="empty-sub">試試清掉搜尋、切到「全部月份」或「全部類型」</div>
+          </div>`
+        : `<div class="empty-state">
+            <div class="empty-icon">📝</div>
+            <div class="empty-title">還沒有任何記錄</div>
+            <div class="empty-sub">從「新增」頁開始記錄第一筆花費</div>
+          </div>`;
       return;
     }
     $('#list').innerHTML = d
@@ -625,7 +646,11 @@ const app = {
     };
 
     $('#chart').innerHTML = !grand
-      ? '<div class="empty">尚無資料</div>'
+      ? `<div class="empty-state">
+          <div class="empty-icon">📊</div>
+          <div class="empty-title">尚無資料</div>
+          <div class="empty-sub">這個月份還沒有花費記錄,新增後會看到類別佔比</div>
+        </div>`
       : mkSec('日常費用', daily) +
         mkSec('一次性', once) +
         `<div style="text-align:right;font-size:13px;color:var(--text-soft);margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border)">總計 $${grand.toLocaleString()}</div>`;

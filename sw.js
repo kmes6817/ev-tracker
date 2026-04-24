@@ -1,5 +1,5 @@
 // Simple cache-first service worker for app shell; network-first for API.
-const CACHE = 'ev-tracker-v5';
+const CACHE = 'ev-tracker-v6';
 const SHELL = [
   './',
   './index.html',

@@ -1,7 +1,7 @@
 {
-  "name": "EV 費用追蹤",
-  "short_name": "EV 費用",
-  "description": "電動車花費記錄與貸款試算",
+  "name": "擁車費用記錄",
+  "short_name": "擁車費用",
+  "description": "電動車擁車成本記錄與貸款試算",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -29,6 +29,9 @@ const state = {
   cMonth: 'all',
   touch: null,
   lastSyncAt: null,
+  // Which month the hero card displays (null = current).
+  heroMonth: null,
+  heroExpanded: false,
 };
 
 const app = {
@@ -415,65 +418,125 @@ const app = {
       .join('');
   },
 
+  /** yyyy-mm string arithmetic — add/sub months. */
+  shiftMonth(ym, delta) {
+    const [y, m] = ym.split('-').map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  },
+
+  toggleHeroExpand() {
+    state.heroExpanded = !state.heroExpanded;
+    this.renderStats();
+  },
+
+  shiftHeroMonth(delta) {
+    const cur = state.heroMonth || currentYearMonth();
+    state.heroMonth = this.shiftMonth(cur, delta);
+    // Reset 'null' back if we've returned to current month, so default label works
+    if (state.heroMonth === currentYearMonth()) state.heroMonth = null;
+    this.renderStats();
+  },
+
   renderStats() {
     if (!state.recs.length && !state.loan) {
       $('#stats').innerHTML = `<div class="onboarding">
         <div style="font-size:32px;margin-bottom:8px">👋</div>
-        <div style="font-weight:500;margin-bottom:4px">歡迎使用 EV 費用追蹤</div>
+        <div style="font-weight:500;margin-bottom:4px">歡迎使用擁車費用記錄</div>
         <div style="font-size:12px;color:var(--text-soft)">從下方選一個類別,填入金額就能開始記錄。先設貸款可看到每月總擁車成本。</div>
       </div>`;
       return;
     }
-    const total = state.recs.reduce((s, r) => s + r.amt, 0);
-    const curTm = currentYearMonth();
-    const mAmt = state.recs.filter((r) => r.date.slice(0, 7) === curTm).reduce((s, r) => s + r.amt, 0);
-    const oAmt = state.recs.filter((r) => r.type === 'o').reduce((s, r) => s + r.amt, 0);
 
     const today = todayISO();
+    const curMonth = currentYearMonth();
+    const shownMonth = state.heroMonth || curMonth;
+    const isCurrent = shownMonth === curMonth;
+
+    // Records for the shown month (for hero figure)
+    const monthRecs = state.recs.filter((r) => r.date.slice(0, 7) === shownMonth);
+    const mAmt = monthRecs.reduce((s, r) => s + r.amt, 0);
+
+    // All-time totals (for pills below)
+    const total = state.recs.reduce((s, r) => s + r.amt, 0);
+    const oAmt = state.recs.filter((r) => r.type === 'o').reduce((s, r) => s + r.amt, 0);
+
+    // Loan status — only include monthly payment in months AFTER start date
     const loanActive = !!state.loan && state.loan.start <= today;
     const moFull = state.loan
       ? Math.round(monthlyPayment(state.loan.price - state.loan.down, state.loan.rate, state.loan.months))
       : 0;
-    const moEffective = loanActive ? moFull : 0;
+    // Monthly payment counts for the shown month if loan had started by its end.
+    const shownMonthEnd = `${shownMonth}-31`;
+    const moForShown = state.loan && state.loan.start <= shownMonthEnd ? moFull : 0;
 
     let costSub;
     if (!state.loan) costSub = '未設貸款';
-    else if (!loanActive) costSub = `貸款 ${state.loan.start} 起算(月供 $${moFull.toLocaleString()})`;
-    else costSub = `含月供 $${moFull.toLocaleString()}`;
+    else if (!loanActive && isCurrent) costSub = `貸款 ${state.loan.start} 起算`;
+    else if (moForShown) costSub = `含月供 $${moForShown.toLocaleString()}`;
+    else costSub = `月供 $${moFull.toLocaleString()} 尚未起算`;
 
-    // Single unified hero card (Apple Wallet style): primary number on top,
-    // three secondary metrics in a single flat strip along the bottom.
-    const hero = {
-      label: '本月擁車成本',
-      value: `$${(mAmt + moEffective).toLocaleString()}`,
-      sub: costSub,
-      meta: [
-        { l: '本月日常', v: `$${mAmt.toLocaleString()}` },
-        { l: '總花費', v: `$${total.toLocaleString()}` },
-        { l: '一次性', v: `$${oAmt.toLocaleString()}` },
-      ],
-    };
-    const data = [hero];
-    $('#stats').innerHTML = data
-      .map(
-        (d) =>
-          `<div class="stat hero">
-            <div class="stat-l">${escapeHtml(d.label)}</div>
-            <div class="stat-v">${escapeHtml(d.value)}</div>
-            ${d.sub ? `<div class="stat-s">${escapeHtml(d.sub)}</div>` : ''}
-            ${
-              d.meta
-                ? `<div class="stat-meta-row">${d.meta
-                    .map(
-                      (m) =>
-                        `<div class="stat-meta"><div class="stat-meta-l">${escapeHtml(m.l)}</div><div class="stat-meta-v">${escapeHtml(m.v)}</div></div>`
-                    )
-                    .join('<div class="stat-meta-sep"></div>')}</div>`
-                : ''
-            }
-          </div>`
-      )
-      .join('');
+    const heroValue = (mAmt + moForShown).toLocaleString();
+    const monthLabel = `${shownMonth.slice(0, 4)} 年 ${shownMonth.slice(5)} 月`;
+    const canGoNext = shownMonth < curMonth;
+
+    // Breakdown for expanded view — category totals in shown month
+    const byCat = {};
+    monthRecs.forEach((r) => {
+      byCat[r.cat] = (byCat[r.cat] || 0) + r.amt;
+    });
+    const sortedCats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+    const catsMax = Math.max(...sortedCats.map(([, v]) => v), 1);
+
+    const expandedMarkup = state.heroExpanded
+      ? `<div class="hero-expand">
+          ${
+            sortedCats.length
+              ? sortedCats
+                  .slice(0, 6)
+                  .map(([c, v]) => {
+                    const meta = categoryMeta(c);
+                    return `<div class="hero-cat-row">
+                      <span class="hero-cat-ico" aria-hidden="true">${meta.icon}</span>
+                      <span class="hero-cat-name">${escapeHtml(c)}</span>
+                      <span class="hero-cat-bar"><span class="hero-cat-fill" style="width:${Math.round((v / catsMax) * 100)}%;background:${meta.color}"></span></span>
+                      <span class="hero-cat-amt">$${v.toLocaleString()}</span>
+                    </div>`;
+                  })
+                  .join('')
+              : '<div class="hero-cat-empty">本月尚無花費記錄</div>'
+          }
+        </div>`
+      : '';
+
+    $('#stats').innerHTML = `
+      <div class="hero-month-nav" role="group" aria-label="月份切換">
+        <button type="button" class="hero-month-btn" data-action="prevHeroMonth" aria-label="上個月">‹</button>
+        <div class="hero-month-label">${escapeHtml(monthLabel)}${isCurrent ? ' · 本月' : ''}</div>
+        <button type="button" class="hero-month-btn" data-action="nextHeroMonth" aria-label="下個月" ${canGoNext ? '' : 'disabled aria-disabled="true"'}>›</button>
+      </div>
+      <button type="button" class="stat hero${state.heroExpanded ? ' expanded' : ''}" data-action="toggleHeroExpand" aria-expanded="${state.heroExpanded}">
+        <div class="stat-l">${isCurrent ? '本月' : '該月'}擁車成本</div>
+        <div class="stat-v">$${escapeHtml(heroValue)}</div>
+        ${costSub ? `<div class="stat-s">${escapeHtml(costSub)}</div>` : ''}
+        <div class="hero-chevron" aria-hidden="true">${state.heroExpanded ? '⌃' : '⌄'}</div>
+        ${expandedMarkup}
+      </button>
+      <div class="stat-pills">
+        <div class="stat-pill">
+          <div class="stat-pill-l">本月日常</div>
+          <div class="stat-pill-v">$${mAmt.toLocaleString()}</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-pill-l">總花費</div>
+          <div class="stat-pill-v">$${total.toLocaleString()}</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-pill-l">一次性</div>
+          <div class="stat-pill-v">$${oAmt.toLocaleString()}</div>
+        </div>
+      </div>
+    `;
   },
 
   renderEvStats() {
@@ -727,6 +790,7 @@ const handleClick = (e) => {
   }
   const action = t.dataset.action;
   if (['submit', 'saveLoan', 'del', 'switchTab'].includes(action)) haptic(10);
+  if (['prevHeroMonth', 'nextHeroMonth', 'toggleHeroExpand'].includes(action)) haptic(8);
   switch (action) {
     case 'reload':
       haptic(15);
@@ -758,6 +822,12 @@ const handleClick = (e) => {
       return app.exportCsv();
     case 'importCsv':
       return app.triggerImport();
+    case 'toggleHeroExpand':
+      return app.toggleHeroExpand();
+    case 'prevHeroMonth':
+      return app.shiftHeroMonth(-1);
+    case 'nextHeroMonth':
+      return app.shiftHeroMonth(1);
   }
 };
 

@@ -229,13 +229,11 @@ button {
 
 /* ---------- Stats ---------- */
 .stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  display: block;
   padding: 10px 12px 8px;
 }
-.stats:has(.onboarding) {
-  grid-template-columns: 1fr;
+.stats > .stat:not(:last-child) {
+  margin-bottom: 8px;
 }
 .onboarding {
   background: var(--surface);
@@ -275,26 +273,25 @@ button {
 }
 
 /* Hero stat — spans 2 columns, 1.7× weight/size. Use for the "本月擁車成本" card. */
-/* Hero stat — Apple Wallet card aesthetic.
-   Dark gradient with electric blue sheen, high-contrast white text. */
+/* Hero stat — Apple Wallet pass aesthetic.
+   Single unified card: primary number on top, three secondary metrics in a
+   divided strip along the bottom. No more orphan small cards. */
 .stat.hero {
-  grid-column: span 2;
-  padding: 16px 20px;
-  border-radius: 14px;
+  padding: 16px 20px 14px;
+  border-radius: 16px;
   background:
     radial-gradient(
       circle at 100% 0%,
-      color-mix(in srgb, var(--primary) 35%, transparent) 0%,
-      transparent 60%
+      color-mix(in srgb, var(--primary) 38%, transparent) 0%,
+      transparent 62%
     ),
     linear-gradient(135deg, #1b2b47 0%, #0f1a2e 100%);
   color: #fff;
   position: relative;
   overflow: hidden;
   box-shadow:
-    0 4px 14px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  min-height: 92px;
+    0 6px 18px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 .stat.hero::before {
   content: '';
@@ -303,39 +300,88 @@ button {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.32), transparent);
 }
 .stat.hero::after {
   content: '⚡';
   position: absolute;
-  top: 10px;
-  right: 14px;
+  top: 12px;
+  right: 16px;
   font-size: 20px;
   opacity: 0.35;
 }
 .stat.hero .stat-l {
   color: rgba(255, 255, 255, 0.65);
   font-size: var(--t-caption);
+  font-weight: var(--w-medium);
+  letter-spacing: var(--tr-wide);
+  text-transform: uppercase;
 }
 .stat.hero .stat-v {
   font-family: var(--font-num);
-  font-size: 30px;
+  font-size: 32px;
   font-weight: var(--w-bold);
-  letter-spacing: var(--tr-tight);
+  letter-spacing: -0.025em;
   color: #fff;
   line-height: 1.05;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 .stat.hero .stat-s {
   color: rgba(255, 255, 255, 0.55);
   margin-top: 4px;
+  font-size: var(--t-caption);
 }
+
+/* Meta strip inside hero — 3 even columns divided by subtle dividers */
+.stat-meta-row {
+  display: flex;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.14);
+}
+.stat-meta {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+}
+.stat-meta:first-child {
+  text-align: left;
+}
+.stat-meta:last-child {
+  text-align: right;
+}
+.stat-meta-l {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: var(--tr-wide);
+  text-transform: uppercase;
+  font-weight: var(--w-medium);
+  margin-bottom: 3px;
+}
+.stat-meta-v {
+  font-family: var(--font-num);
+  font-size: var(--t-body);
+  font-weight: var(--w-medium);
+  letter-spacing: var(--tr-tight);
+  color: rgba(255, 255, 255, 0.92);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stat-meta-sep {
+  width: 0.5px;
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.14);
+  margin: 2px 0;
+}
+
 @media (prefers-color-scheme: dark) {
   .stat.hero {
     background:
       radial-gradient(
         circle at 100% 0%,
-        color-mix(in srgb, var(--primary) 45%, transparent) 0%,
+        color-mix(in srgb, var(--primary) 48%, transparent) 0%,
         transparent 65%
       ),
       linear-gradient(135deg, #1e3258 0%, #111a2e 100%);

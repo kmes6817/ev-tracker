@@ -441,23 +441,37 @@ const app = {
     else if (!loanActive) costSub = `貸款 ${state.loan.start} 起算(月供 $${moFull.toLocaleString()})`;
     else costSub = `含月供 $${moFull.toLocaleString()}`;
 
-    // Hero + 2 supporting stats. 一次性改裝 moved to chart tab (it's already
-    // visible there under 一次性 section — frees vertical space on first screen).
-    const data = [
-      {
-        label: '本月擁車成本',
-        value: `$${(mAmt + moEffective).toLocaleString()}`,
-        sub: costSub,
-        hero: true,
-      },
-      { label: '本月日常', value: `$${mAmt.toLocaleString()}`, sub: curTm },
-      { label: '總花費', value: `$${total.toLocaleString()}`, sub: `${state.recs.length} 筆` },
-    ];
-    void oAmt;
+    // Single unified hero card (Apple Wallet style): primary number on top,
+    // three secondary metrics in a single flat strip along the bottom.
+    const hero = {
+      label: '本月擁車成本',
+      value: `$${(mAmt + moEffective).toLocaleString()}`,
+      sub: costSub,
+      meta: [
+        { l: '本月日常', v: `$${mAmt.toLocaleString()}` },
+        { l: '總花費', v: `$${total.toLocaleString()}` },
+        { l: '一次性', v: `$${oAmt.toLocaleString()}` },
+      ],
+    };
+    const data = [hero];
     $('#stats').innerHTML = data
       .map(
         (d) =>
-          `<div class="stat${d.hero ? ' hero' : ''}"><div class="stat-l">${escapeHtml(d.label)}</div><div class="stat-v">${escapeHtml(d.value)}</div>${d.sub ? `<div class="stat-s">${escapeHtml(d.sub)}</div>` : ''}</div>`
+          `<div class="stat hero">
+            <div class="stat-l">${escapeHtml(d.label)}</div>
+            <div class="stat-v">${escapeHtml(d.value)}</div>
+            ${d.sub ? `<div class="stat-s">${escapeHtml(d.sub)}</div>` : ''}
+            ${
+              d.meta
+                ? `<div class="stat-meta-row">${d.meta
+                    .map(
+                      (m) =>
+                        `<div class="stat-meta"><div class="stat-meta-l">${escapeHtml(m.l)}</div><div class="stat-meta-v">${escapeHtml(m.v)}</div></div>`
+                    )
+                    .join('<div class="stat-meta-sep"></div>')}</div>`
+                : ''
+            }
+          </div>`
       )
       .join('');
   },

@@ -459,7 +459,11 @@ const app = {
   renderLoan() {
     const el = $('#loan-display');
     if (!state.loan) {
-      el.innerHTML = '<div class="empty">尚未設定貸款</div>';
+      el.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">🏦</div>
+        <div class="empty-title">尚未設定貸款</div>
+        <div class="empty-sub">填入車價、期數就能算每月應繳與總擁車成本</div>
+      </div>`;
       return;
     }
     const p = state.loan.price - state.loan.down;
@@ -536,7 +540,18 @@ const app = {
 
     $('#list-count').textContent = d.length + ' 筆';
     if (!d.length) {
-      $('#list').innerHTML = '<div class="empty">沒有符合的記錄</div>';
+      const hasFilter = search || state.mFilter !== 'all' || state.tFilter !== 'all';
+      $('#list').innerHTML = hasFilter
+        ? `<div class="empty-state">
+            <div class="empty-icon">🔎</div>
+            <div class="empty-title">沒有符合的記錄</div>
+            <div class="empty-sub">試試清掉搜尋、切到「全部月份」或「全部類型」</div>
+          </div>`
+        : `<div class="empty-state">
+            <div class="empty-icon">📝</div>
+            <div class="empty-title">還沒有任何記錄</div>
+            <div class="empty-sub">從「新增」頁開始記錄第一筆花費</div>
+          </div>`;
       return;
     }
     $('#list').innerHTML = d
@@ -631,7 +646,11 @@ const app = {
     };
 
     $('#chart').innerHTML = !grand
-      ? '<div class="empty">尚無資料</div>'
+      ? `<div class="empty-state">
+          <div class="empty-icon">📊</div>
+          <div class="empty-title">尚無資料</div>
+          <div class="empty-sub">這個月份還沒有花費記錄,新增後會看到類別佔比</div>
+        </div>`
       : mkSec('日常費用', daily) +
         mkSec('一次性', once) +
         `<div style="text-align:right;font-size:13px;color:var(--text-soft);margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border)">總計 $${grand.toLocaleString()}</div>`;

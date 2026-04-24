@@ -880,6 +880,97 @@ select:focus {
   display: none;
 }
 
+/* ---------- Empty state ---------- */
+.empty-state {
+  padding: var(--s-8) var(--s-4);
+  text-align: center;
+  color: var(--text-soft);
+}
+.empty-icon {
+  font-size: 40px;
+  margin-bottom: var(--s-3);
+  opacity: 0.45;
+  filter: grayscale(0.3);
+}
+.empty-title {
+  font-size: var(--t-ui);
+  font-weight: var(--w-medium);
+  color: var(--text-muted);
+  margin-bottom: var(--s-1);
+}
+.empty-sub {
+  font-size: var(--t-body);
+  color: var(--text-soft);
+  max-width: 280px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* ---------- Motion — first-paint stagger ---------- */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes progress-sweep {
+  from {
+    width: 0;
+  }
+}
+.stats > .stat {
+  animation: rise 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.stats > .stat:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stats > .stat:nth-child(2) {
+  animation-delay: 40ms;
+}
+.stats > .stat:nth-child(3) {
+  animation-delay: 80ms;
+}
+.stats > .stat:nth-child(4) {
+  animation-delay: 120ms;
+}
+.progress-fill {
+  animation: progress-sweep 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .stats > .stat,
+  .progress-fill {
+    animation: none;
+  }
+}
+
+/* ---------- Nav active indicator ---------- */
+.nav-btn {
+  position: relative;
+}
+.nav-btn.on::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 30%;
+  right: 30%;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 0 0 2px 2px;
+}
+
+/* ---------- Sync bar — glass blur ---------- */
+@supports (backdrop-filter: blur(12px)) {
+  .sync-bar {
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+  }
+}
+
 /* ---------- Pull to refresh ---------- */
 .ptr {
   position: fixed;

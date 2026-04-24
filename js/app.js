@@ -137,6 +137,7 @@ const app = {
     state.fCat = '';
     document.querySelectorAll('.type-btn').forEach((b) => b.classList.toggle('on', b.dataset.type === t));
     $('#brand-field').classList.toggle('hide', t !== 'o');
+    $('#ev-fields').classList.add('hide'); // kwh/odo only relevant when cat === '充電'
     this.renderCats();
   },
 
@@ -395,17 +396,23 @@ const app = {
     const curTm = currentYearMonth();
     const mAmt = state.recs.filter((r) => r.date.slice(0, 7) === curTm).reduce((s, r) => s + r.amt, 0);
     const oAmt = state.recs.filter((r) => r.type === 'o').reduce((s, r) => s + r.amt, 0);
-    const mo = state.loan
+
+    const today = todayISO();
+    const loanActive = !!state.loan && state.loan.start <= today;
+    const moFull = state.loan
       ? Math.round(monthlyPayment(state.loan.price - state.loan.down, state.loan.rate, state.loan.months))
       : 0;
+    const moEffective = loanActive ? moFull : 0;
+
+    let costSub;
+    if (!state.loan) costSub = '未設貸款';
+    else if (!loanActive) costSub = `貸款 ${state.loan.start} 起算(月供 $${moFull.toLocaleString()})`;
+    else costSub = `含月供 $${moFull.toLocaleString()}`;
+
     const data = [
       ['總花費', `$${total.toLocaleString()}`, `${state.recs.length} 筆`],
       ['本月日常', `$${mAmt.toLocaleString()}`, curTm],
-      [
-        '本月擁車成本',
-        `$${(mAmt + mo).toLocaleString()}`,
-        mo ? `含月供 $${mo.toLocaleString()}` : '未設貸款',
-      ],
+      ['本月擁車成本', `$${(mAmt + moEffective).toLocaleString()}`, costSub],
       ['一次性改裝', `$${oAmt.toLocaleString()}`, ''],
     ];
     $('#stats').innerHTML = data
@@ -452,16 +459,31 @@ const app = {
     const p = state.loan.price - state.loan.down;
     const moA = monthlyPayment(p, state.loan.rate, state.loan.months);
     const int = moA * state.loan.months - p;
-    const paid = Math.min(monthsBetween(state.loan.start), state.loan.months);
+    const today = todayISO();
+    const notStarted = state.loan.start > today;
+    const paid = notStarted ? 0 : Math.min(monthsBetween(state.loan.start), state.loan.months);
     const rem = Math.max(0, state.loan.months - paid);
     const pct = Math.round(Math.min(paid / state.loan.months, 1) * 100);
+
+    let banner = '';
+    let footer = `<span>已還 ${paid} 期</span><span>${pct}%</span>`;
+    if (notStarted) {
+      const daysUntil = Math.ceil((new Date(state.loan.start) - new Date(today)) / 86400000);
+      banner = `<div class="loan-status pending" role="status">🕒 尚未開始 · 首期 ${state.loan.start}${daysUntil > 0 ? ` (還有 ${daysUntil} 天)` : ''}</div>`;
+      footer = `<span>尚未起算</span><span>${state.loan.months} 期 / ${moA > 0 ? Math.round(moA * state.loan.months).toLocaleString() : 0} 元</span>`;
+    } else if (rem === 0) {
+      banner = `<div class="loan-status done" role="status">✓ 已清償</div>`;
+    }
+
+    const moLabel = notStarted ? '每月將繳' : '每月應繳';
     el.innerHTML = `<div class="loan-card">
-      <div class="loan-row"><span class="loan-k">每月應繳</span><span class="loan-v" style="color:var(--primary);font-size:22px">$${Math.round(moA).toLocaleString()}</span></div>
+      ${banner}
+      <div class="loan-row"><span class="loan-k">${moLabel}</span><span class="loan-v" style="color:var(--primary);font-size:22px">$${Math.round(moA).toLocaleString()}</span></div>
       <div class="loan-row"><span class="loan-k">貸款金額</span><span class="loan-v">$${p.toLocaleString()}</span></div>
       <div class="loan-row"><span class="loan-k">總利息</span><span class="loan-v">$${Math.round(int).toLocaleString()}</span></div>
-      <div class="loan-row"><span class="loan-k">剩餘 ${rem} 期</span><span class="loan-v">$${Math.round(rem * moA).toLocaleString()}</span></div>
+      <div class="loan-row"><span class="loan-k">${notStarted ? '總期數' : `剩餘 ${rem} 期`}</span><span class="loan-v">$${Math.round((notStarted ? state.loan.months : rem) * moA).toLocaleString()}</span></div>
       <div class="progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><div class="progress-fill" style="width:${pct}%"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-ghost)"><span>已還 ${paid} 期</span><span>${pct}%</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-ghost)">${footer}</div>
     </div>`;
   },
 

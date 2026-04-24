@@ -170,12 +170,26 @@ input,
 select {
   width: 100%;
   font-size: 16px; /* 16px avoids iOS auto-zoom on focus */
+  line-height: 1.35;
   padding: 11px 12px;
   border: 0.5px solid #ccc;
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
   font-family: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+}
+input[type='date'] {
+  min-height: 44px;
+  display: block;
+}
+input[type='date']::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.35em;
+}
+input[type='date']::-webkit-calendar-picker-indicator {
+  margin-left: 4px;
 }
 input:focus,
 select:focus {
@@ -348,6 +362,24 @@ select:focus {
 .loan-v {
   font-weight: 500;
   color: var(--text);
+}
+.loan-status {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.loan-status.pending {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border: 1px solid var(--warn-border);
+}
+.loan-status.done {
+  background: #e1f5ee;
+  color: #0f6e56;
+  border: 1px solid #1d9e75;
 }
 .progress {
   height: 10px;

@@ -76,6 +76,11 @@ describe('monthsBetween', () => {
     expect(monthsBetween('', new Date(2026, 3, 22))).toBe(0);
     expect(monthsBetween('2030-01-01', new Date(2026, 3, 22))).toBe(0);
   });
+
+  it('returns 0 when start is in the same month but a future day (loan not yet due)', () => {
+    // loan starts 2026-06-22, today 2026-04-24 → 0 (not 2)
+    expect(monthsBetween('2026-06-22', new Date(2026, 3, 24))).toBe(0);
+  });
 });
 
 describe('monthlyPayment', () => {

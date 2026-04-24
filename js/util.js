@@ -54,8 +54,14 @@ export const safeParseInt = (v) => {
   return Number.isFinite(n) ? n : 0;
 };
 
-/** Simple toast notification — replaces alert(). */
-export const toast = (msg, type = 'info', durationMs = 2400) => {
+/** Toast notification with optional action button.
+ *  toast('Saved')                          → plain info toast for 2.4s
+ *  toast('Failed', 'error')                → red variant
+ *  toast('Failed', 'error', 3200)          → legacy signature (duration ms)
+ *  toast('Deleted', 'info', { duration: 6000, action: { label: '復原', handler } })
+ */
+export const toast = (msg, type = 'info', opts = 2400) => {
+  const { duration = 2400, action } = typeof opts === 'number' ? { duration: opts } : opts;
   let host = document.getElementById('toast-host');
   if (!host) {
     host = document.createElement('div');
@@ -67,7 +73,26 @@ export const toast = (msg, type = 'info', durationMs = 2400) => {
   }
   const el = document.createElement('div');
   el.className = 'toast' + (type === 'error' ? ' err' : '');
-  el.textContent = msg;
+  const text = document.createElement('span');
+  text.className = 'toast-text';
+  text.textContent = msg;
+  el.appendChild(text);
+  if (action) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'toast-action';
+    btn.textContent = action.label;
+    btn.addEventListener('click', () => {
+      try {
+        action.handler();
+      } finally {
+        el.remove();
+      }
+    });
+    el.appendChild(btn);
+  }
   host.appendChild(el);
-  setTimeout(() => el.remove(), durationMs);
+  const timer = setTimeout(() => el.remove(), duration);
+  // Pause auto-dismiss on hover/focus (ADA: gives user time to read/act)
+  el.addEventListener('mouseenter', () => clearTimeout(timer));
 };

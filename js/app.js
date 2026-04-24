@@ -409,7 +409,8 @@ const app = {
     else if (!loanActive) costSub = `貸款 ${state.loan.start} 起算(月供 $${moFull.toLocaleString()})`;
     else costSub = `含月供 $${moFull.toLocaleString()}`;
 
-    // Hero comes first — the one number that matters
+    // Hero + 2 supporting stats. 一次性改裝 moved to chart tab (it's already
+    // visible there under 一次性 section — frees vertical space on first screen).
     const data = [
       {
         label: '本月擁車成本',
@@ -419,8 +420,8 @@ const app = {
       },
       { label: '本月日常', value: `$${mAmt.toLocaleString()}`, sub: curTm },
       { label: '總花費', value: `$${total.toLocaleString()}`, sub: `${state.recs.length} 筆` },
-      { label: '一次性改裝', value: `$${oAmt.toLocaleString()}`, sub: '' },
     ];
+    void oAmt;
     $('#stats').innerHTML = data
       .map(
         (d) =>

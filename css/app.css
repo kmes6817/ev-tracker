@@ -230,10 +230,61 @@ button {
 /* ---------- Stats ---------- */
 .stats {
   display: block;
-  padding: 10px 12px 8px;
+  padding: 6px 12px 10px;
 }
-.stats > .stat:not(:last-child) {
+.stats > .stat.hero {
+  width: 100%;
+  text-align: left;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* ---------- Month switcher above hero ---------- */
+.hero-month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   margin-bottom: 8px;
+  padding: 0 8px;
+}
+.hero-month-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  font-size: 22px;
+  font-weight: var(--w-medium);
+  border-radius: 50%;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+.hero-month-btn:hover {
+  background: var(--primary-bg);
+}
+.hero-month-btn:active {
+  transform: scale(0.9);
+}
+.hero-month-btn:disabled {
+  color: var(--text-ghost);
+  cursor: default;
+  opacity: 0.4;
+}
+.hero-month-btn:disabled:hover {
+  background: transparent;
+}
+.hero-month-label {
+  flex: 1;
+  text-align: center;
+  font-size: var(--t-body);
+  font-weight: var(--w-medium);
+  color: var(--text);
+  letter-spacing: var(--tr-tight);
 }
 .onboarding {
   background: var(--surface);
@@ -277,7 +328,7 @@ button {
    Single unified card: primary number on top, three secondary metrics in a
    divided strip along the bottom. No more orphan small cards. */
 .stat.hero {
-  padding: 16px 20px 14px;
+  padding: 16px 48px 14px 20px;
   border-radius: 16px;
   background:
     radial-gradient(
@@ -332,48 +383,131 @@ button {
   font-size: var(--t-caption);
 }
 
-/* Meta strip inside hero — 3 even columns divided by subtle dividers */
-.stat-meta-row {
+/* Chevron affordance — hero is tappable to expand */
+.hero-chevron {
+  position: absolute;
+  bottom: 10px;
+  right: 16px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 0.25s;
+}
+.stat.hero.expanded .hero-chevron {
+  transform: rotate(180deg);
+}
+
+/* Category breakdown shown when hero is tapped */
+.hero-expand {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: hero-expand-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes hero-expand-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.hero-cat-row {
   display: flex;
   align-items: center;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 0.5px solid rgba(255, 255, 255, 0.14);
+  gap: 8px;
+  font-family: var(--font-ui);
 }
-.stat-meta {
-  flex: 1;
+.hero-cat-ico {
+  font-size: 16px;
+  width: 20px;
   text-align: center;
-  min-width: 0;
+  flex-shrink: 0;
 }
-.stat-meta:first-child {
-  text-align: left;
-}
-.stat-meta:last-child {
-  text-align: right;
-}
-.stat-meta-l {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.55);
-  letter-spacing: var(--tr-wide);
-  text-transform: uppercase;
-  font-weight: var(--w-medium);
-  margin-bottom: 3px;
-}
-.stat-meta-v {
-  font-family: var(--font-num);
+.hero-cat-name {
   font-size: var(--t-body);
-  font-weight: var(--w-medium);
-  letter-spacing: var(--tr-tight);
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(255, 255, 255, 0.85);
+  flex-shrink: 0;
+  width: 64px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.stat-meta-sep {
-  width: 0.5px;
-  align-self: stretch;
-  background: rgba(255, 255, 255, 0.14);
-  margin: 2px 0;
+.hero-cat-bar {
+  flex: 1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.hero-cat-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hero-cat-amt {
+  font-family: var(--font-num);
+  font-size: var(--t-body);
+  font-weight: var(--w-medium);
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: var(--tr-tight);
+  width: 68px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.hero-cat-empty {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: var(--t-body);
+  padding: 12px 0;
+}
+
+/* ---------- Pills below hero (previously embedded meta strip) ---------- */
+.stat-pills {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.stat-pill {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 10px 8px 11px;
+  text-align: center;
+  box-shadow: var(--elev-1);
+  min-height: 62px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.stat-pill:active {
+  transform: scale(0.97);
+}
+.stat-pill-l {
+  font-size: 10px;
+  font-weight: var(--w-medium);
+  letter-spacing: var(--tr-wide);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 4px;
+}
+.stat-pill-v {
+  font-family: var(--font-num);
+  font-size: var(--t-ui);
+  font-weight: var(--w-bold);
+  letter-spacing: var(--tr-tight);
+  color: var(--text);
+  line-height: 1;
 }
 
 @media (prefers-color-scheme: dark) {

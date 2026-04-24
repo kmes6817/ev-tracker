@@ -160,31 +160,19 @@ const app = {
       .join('');
   },
 
-  copyLast() {
-    if (!state.recs.length) return;
-    const r = state.recs[0];
-    this.setType(r.type);
-    state.fCat = r.cat;
-    $('#f-amt').value = r.amt;
-    $('#f-date').value = r.date;
-    $('#f-brand').value = r.brand || '';
-    $('#f-note').value = r.note || '';
-    $('#f-kwh').value = r.kwh || '';
-    $('#f-odo').value = r.odo || '';
-    $('#ev-fields').classList.toggle('hide', r.cat !== '充電');
-    this.renderCats();
-  },
-
-  renderCopyLast() {
-    const btn = $('#copy-last');
-    if (state.editId || !state.recs.length) {
-      btn.classList.add('hide');
-      return;
+  /** Quick charging shortcut — skips category picking, focuses amount. */
+  quickCharge() {
+    if (state.editId) {
+      state.editId = null;
+      this.renderEditBar();
     }
-    const r = state.recs[0];
-    const meta = categoryMeta(r.cat);
-    btn.classList.remove('hide');
-    btn.innerHTML = `📋 複製上一筆 — <span aria-hidden="true">${meta.icon}</span> ${escapeHtml(r.cat)} · $${r.amt.toLocaleString()}`;
+    this.setType('r');
+    state.fCat = '充電';
+    this.clearForm();
+    $('#f-date').value = todayISO();
+    $('#ev-fields').classList.remove('hide');
+    this.switchTab('add');
+    setTimeout(() => $('#f-amt').focus(), 320);
   },
 
   renderEditBar() {
@@ -288,7 +276,6 @@ const app = {
       ['add', 'loan', 'list', 'chart'].forEach((t) => $('#tab-' + t).classList.toggle('hide', t !== 'add'));
       this.renderEditBar();
       this.renderCats();
-      this.renderCopyLast();
     } else {
       this.switchTab('add');
     }
@@ -305,12 +292,25 @@ const app = {
   },
 
   delRec(id) {
-    if (!confirm('確定刪除這筆記錄?')) return;
-    state.recs = state.recs.filter((r) => r.id !== id);
+    const rec = state.recs.find((x) => x.id === id);
+    if (!rec) return;
+    const idx = state.recs.indexOf(rec);
+    state.recs = state.recs.filter((x) => x.id !== id);
     state.swipedId = null;
-    toast('已刪除');
     this.save();
     this.renderAll();
+    toast('已刪除', 'info', {
+      duration: 6000,
+      action: {
+        label: '復原',
+        handler: () => {
+          state.recs.splice(idx, 0, rec);
+          this.save();
+          this.renderAll();
+          toast('已復原');
+        },
+      },
+    });
   },
 
   exportCsv() {
@@ -473,6 +473,25 @@ const app = {
     else costSub = `月供 $${moFull.toLocaleString()} 尚未起算`;
 
     const heroValue = (mAmt + moForShown).toLocaleString();
+
+    // Month-over-month comparison — vs the previous month's same figure
+    const prevMonth = this.shiftMonth(shownMonth, -1);
+    const prevAmt = state.recs.filter((r) => r.date.slice(0, 7) === prevMonth).reduce((s, r) => s + r.amt, 0);
+    const prevMoEnd = `${prevMonth}-31`;
+    const prevMoForPrev = state.loan && state.loan.start <= prevMoEnd ? moFull : 0;
+    const prevTotal = prevAmt + prevMoForPrev;
+    const curTotal = mAmt + moForShown;
+    let momBadge = '';
+    if (prevTotal > 0 || curTotal > 0) {
+      const diff = curTotal - prevTotal;
+      const pct = prevTotal ? Math.round((diff / prevTotal) * 100) : 0;
+      const dir = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
+      const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '—';
+      const sign = diff > 0 ? '+' : diff < 0 ? '−' : '';
+      const abs = Math.abs(diff).toLocaleString();
+      const pctTxt = prevTotal ? ` · ${sign}${Math.abs(pct)}%` : '';
+      momBadge = `<span class="mom-badge mom-${dir}" aria-label="對比上月">${arrow} ${sign}$${abs}${pctTxt}</span>`;
+    }
     const monthLabel = `${shownMonth.slice(0, 4)} 年 ${shownMonth.slice(5)} 月`;
     const canGoNext = shownMonth < curMonth;
 
@@ -514,7 +533,10 @@ const app = {
       <button type="button" class="stat hero${state.heroExpanded ? ' expanded' : ''}" data-action="toggleHeroExpand" aria-expanded="${state.heroExpanded}">
         <div class="stat-l">${isCurrent ? '本月' : '該月'}擁車成本</div>
         <div class="stat-v">$${escapeHtml(heroValue)}</div>
-        ${costSub ? `<div class="stat-s">${escapeHtml(costSub)}</div>` : ''}
+        <div class="stat-sub-row">
+          ${costSub ? `<span class="stat-s">${escapeHtml(costSub)}</span>` : '<span></span>'}
+          ${momBadge}
+        </div>
         <div class="hero-chevron" aria-hidden="true">${state.heroExpanded ? '⌃' : '⌄'}</div>
         ${expandedMarkup}
       </button>
@@ -532,6 +554,11 @@ const app = {
           <div class="stat-pill-v">$${oAmt.toLocaleString()}</div>
         </div>
       </div>
+      <button type="button" class="quick-charge" data-action="quickCharge">
+        <span class="quick-charge-icon" aria-hidden="true">⚡</span>
+        <span class="quick-charge-text">記一筆充電</span>
+        <span class="quick-charge-arrow" aria-hidden="true">›</span>
+      </button>
     `;
   },
 
@@ -766,7 +793,6 @@ const app = {
     this.renderStats();
     this.renderNav();
     this.renderEditBar();
-    this.renderCopyLast();
     this.renderCats();
     if (state.tab === 'loan') this.renderLoan();
     if (state.tab === 'list') this.renderList();
@@ -796,9 +822,9 @@ const handleClick = (e) => {
     case 'selCat':
       haptic(5);
       return app.selCat(t.dataset.cat);
-    case 'copyLast':
-      haptic(8);
-      return app.copyLast();
+    case 'quickCharge':
+      haptic(10);
+      return app.quickCharge();
     case 'submit':
       return app.submitForm();
     case 'cancelEdit':

@@ -311,8 +311,38 @@ button {
 }
 .stat.hero .stat-s {
   color: rgba(255, 255, 255, 0.55);
-  margin-top: 4px;
   font-size: var(--t-caption);
+}
+.stat-sub-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  min-height: 18px;
+}
+.mom-badge {
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-weight: var(--w-bold);
+  letter-spacing: var(--tr-tight);
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.mom-badge.mom-up {
+  background: rgba(255, 107, 107, 0.22);
+  color: #ffb8b8;
+}
+.mom-badge.mom-down {
+  background: rgba(63, 209, 155, 0.2);
+  color: #9be9c7;
+}
+.mom-badge.mom-flat {
+  color: rgba(255, 255, 255, 0.65);
 }
 
 /* Chevron affordance — hero is tappable to expand */
@@ -440,6 +470,47 @@ button {
   letter-spacing: var(--tr-tight);
   color: var(--text);
   line-height: 1;
+}
+
+/* ---------- Quick charge CTA (under stats) ---------- */
+.quick-charge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 13px 16px;
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+  border-radius: 14px;
+  font-size: var(--t-ui);
+  font-weight: var(--w-bold);
+  letter-spacing: var(--tr-tight);
+  min-height: 52px;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+  font-family: inherit;
+}
+.quick-charge:active {
+  transform: scale(0.98);
+  background: color-mix(in srgb, var(--primary) 20%, var(--surface));
+}
+.quick-charge-icon {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.quick-charge-text {
+  flex: 1;
+  text-align: left;
+}
+.quick-charge-arrow {
+  font-size: 20px;
+  opacity: 0.6;
+  font-weight: var(--w-regular);
+  flex-shrink: 0;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -675,18 +746,6 @@ select:focus {
   background: none;
   border: none;
   font-weight: 500;
-}
-
-.copy-last {
-  width: 100%;
-  padding: 9px 12px;
-  margin-bottom: 12px;
-  background: var(--surface-2);
-  border: 0.5px solid var(--border);
-  border-radius: 8px;
-  font-size: 13px;
-  color: var(--text-muted);
-  text-align: left;
 }
 
 /* ---------- Loan ---------- */
@@ -1100,15 +1159,39 @@ select:focus {
 .toast {
   background: rgba(17, 17, 17, 0.92);
   color: #fff;
-  padding: 10px 16px;
-  border-radius: 10px;
+  padding: 10px 14px 10px 16px;
+  border-radius: 12px;
   font-size: 13px;
-  max-width: 320px;
+  max-width: 360px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   animation: toast-in 0.2s ease-out;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
 }
 .toast.err {
   background: rgba(226, 75, 74, 0.95);
+}
+.toast-action {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: var(--w-bold);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+.toast-action:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+.toast-action:active {
+  transform: scale(0.95);
 }
 @keyframes toast-in {
   from {

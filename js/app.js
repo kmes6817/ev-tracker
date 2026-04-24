@@ -13,6 +13,7 @@ import {
 import { categoriesOfType, categoryMeta } from './categories.js';
 import { computeEvStats } from './evStats.js';
 import { recordsToCsv, csvToRecords, mergeImported, downloadBlob } from './csv.js';
+import { icon } from './icons.js';
 import { api } from './api.js';
 
 const state = {
@@ -153,7 +154,7 @@ const app = {
         const on = state.fCat === c;
         const style = on ? `border-color:${meta.color};background:${meta.bg};color:${meta.color}` : '';
         return `<button type="button" class="cat-btn ${on ? 'sel' : ''}" data-action="selCat" data-cat="${escapeHtml(c)}" style="${style}" aria-pressed="${on}">
-          <span class="ci" aria-hidden="true">${meta.icon}</span>${escapeHtml(c)}
+          <span class="ci" aria-hidden="true">${icon(meta.icon)}</span>${escapeHtml(c)}
         </button>`;
       })
       .join('');
@@ -167,34 +168,19 @@ const app = {
     return parts.join(' · ');
   },
 
-  /** Quick charging shortcut — skips category picking, focuses amount. */
-  quickCharge() {
-    if (state.editId) {
-      state.editId = null;
-      this.renderEditBar();
-    }
-    this.setType('r');
-    state.fCat = '充電';
-    this.clearForm();
-    $('#f-date').value = todayISO();
-    $('#ev-fields').classList.remove('hide');
-    this.switchTab('add');
-    setTimeout(() => $('#f-amt').focus(), 320);
-  },
-
   renderEditBar() {
     const el = $('#edit-bar');
     const btn = $('#btn-submit');
     if (state.editId) {
       el.classList.remove('hide');
       el.className = 'edit-bar';
-      el.innerHTML = `<span>✏️ 編輯模式</span><button type="button" data-action="cancelEdit">取消</button>`;
+      el.innerHTML = `<span><span class="inline-ico">${icon('pencil-line')}</span>編輯模式</span><button type="button" data-action="cancelEdit">取消</button>`;
       btn.className = 'btn-primary ok';
-      btn.textContent = '✓ 儲存修改';
+      btn.textContent = '儲存修改';
     } else {
       el.classList.add('hide');
       btn.className = 'btn-primary';
-      btn.textContent = '＋ 新增';
+      btn.textContent = '新增';
     }
   },
 
@@ -247,10 +233,10 @@ const app = {
       rec.id = uuid();
       state.recs = [rec, ...state.recs];
       const btn = $('#btn-submit');
-      btn.textContent = '✓ 已新增';
+      btn.textContent = '已新增';
       btn.className = 'btn-primary ok';
       setTimeout(() => {
-        btn.textContent = '＋ 新增';
+        btn.textContent = '新增';
         btn.className = 'btn-primary';
       }, 1200);
     }
@@ -357,7 +343,7 @@ const app = {
       start: $('#l-start').value || todayISO(),
     };
     const btn = $('#btn-loan');
-    btn.textContent = '✓ 已儲存';
+    btn.textContent = '已儲存';
     btn.classList.add('ok');
     setTimeout(() => {
       btn.textContent = '儲存貸款設定';
@@ -403,16 +389,16 @@ const app = {
 
   renderNav() {
     const items = [
-      ['add', state.editId ? '✏️' : '➕', state.editId ? '編輯中' : '新增'],
-      ['loan', '🏦', '貸款'],
-      ['list', '📋', '明細'],
-      ['chart', '📊', '統計'],
+      ['add', state.editId ? 'pencil-line' : 'plus', state.editId ? '編輯中' : '新增'],
+      ['loan', 'landmark', '貸款'],
+      ['list', 'list-check', '明細'],
+      ['chart', 'bar-chart', '統計'],
     ];
     $('#nav').innerHTML = items
       .map(
-        ([id, icon, label]) =>
+        ([id, iconName, label]) =>
           `<button type="button" class="nav-btn ${state.tab === id ? 'on' : ''}" data-action="switchTab" data-tab="${id}" aria-current="${state.tab === id ? 'page' : 'false'}">
-            <span class="nav-icon" aria-hidden="true">${icon}</span>${label}
+            <span class="nav-icon" aria-hidden="true">${icon(iconName)}</span>${label}
           </button>`
       )
       .join('');
@@ -441,9 +427,9 @@ const app = {
   renderStats() {
     if (!state.recs.length && !state.loan) {
       $('#stats').innerHTML = `<div class="onboarding">
-        <div style="font-size:32px;margin-bottom:8px">👋</div>
-        <div style="font-weight:500;margin-bottom:4px">歡迎使用擁車費用記錄</div>
-        <div style="font-size:12px;color:var(--text-soft)">從下方選一個類別,填入金額就能開始記錄。先設貸款可看到每月總擁車成本。</div>
+        <div class="onboarding-ico" aria-hidden="true">${icon('sparkles')}</div>
+        <div class="onboarding-title">歡迎使用擁車費用記錄</div>
+        <div class="onboarding-sub">從下方選一個類別,填入金額就能開始記錄。先設貸款可看到每月總擁車成本。</div>
       </div>`;
       return;
     }
@@ -516,7 +502,7 @@ const app = {
                   .map(([c, v]) => {
                     const meta = categoryMeta(c);
                     return `<div class="hero-cat-row">
-                      <span class="hero-cat-ico" aria-hidden="true">${meta.icon}</span>
+                      <span class="hero-cat-ico" aria-hidden="true">${icon(meta.icon)}</span>
                       <span class="hero-cat-name">${escapeHtml(c)}</span>
                       <span class="hero-cat-bar"><span class="hero-cat-fill" style="width:${Math.round((v / catsMax) * 100)}%;background:${meta.color}"></span></span>
                       <span class="hero-cat-amt">$${v.toLocaleString()}</span>
@@ -530,9 +516,9 @@ const app = {
 
     $('#stats').innerHTML = `
       <div class="hero-month-nav" role="group" aria-label="月份切換">
-        <button type="button" class="hero-month-btn" data-action="prevHeroMonth" aria-label="上個月">‹</button>
+        <button type="button" class="hero-month-btn" data-action="prevHeroMonth" aria-label="上個月">${icon('chevron-left')}</button>
         <div class="hero-month-label">${escapeHtml(monthLabel)}${isCurrent ? ' · 本月' : ''}</div>
-        <button type="button" class="hero-month-btn" data-action="nextHeroMonth" aria-label="下個月" ${canGoNext ? '' : 'disabled aria-disabled="true"'}>›</button>
+        <button type="button" class="hero-month-btn" data-action="nextHeroMonth" aria-label="下個月" ${canGoNext ? '' : 'disabled aria-disabled="true"'}>${icon('chevron-right')}</button>
       </div>
       <button type="button" class="stat hero${state.heroExpanded ? ' expanded' : ''}" data-action="toggleHeroExpand" aria-expanded="${state.heroExpanded}">
         <div class="stat-l">${isCurrent ? '本月' : '該月'}擁車成本</div>
@@ -541,7 +527,7 @@ const app = {
           ${costSub ? `<span class="stat-s">${escapeHtml(costSub)}</span>` : '<span></span>'}
           ${momBadge}
         </div>
-        <div class="hero-chevron" aria-hidden="true">${state.heroExpanded ? '⌃' : '⌄'}</div>
+        <div class="hero-chevron" aria-hidden="true">${icon('chevron-down')}</div>
         ${expandedMarkup}
       </button>
       <div class="stat-pills">
@@ -558,11 +544,6 @@ const app = {
           <div class="stat-pill-v">$${oAmt.toLocaleString()}</div>
         </div>
       </div>
-      <button type="button" class="quick-charge" data-action="quickCharge">
-        <span class="quick-charge-icon" aria-hidden="true">⚡</span>
-        <span class="quick-charge-text">記一筆充電</span>
-        <span class="quick-charge-arrow" aria-hidden="true">›</span>
-      </button>
     `;
   },
 
@@ -597,7 +578,7 @@ const app = {
     const el = $('#loan-display');
     if (!state.loan) {
       el.innerHTML = `<div class="empty-state">
-        <div class="empty-icon">🏦</div>
+        <div class="empty-icon">${icon('landmark')}</div>
         <div class="empty-title">尚未設定貸款</div>
         <div class="empty-sub">填入車價、期數就能算每月應繳與總擁車成本</div>
       </div>`;
@@ -616,10 +597,10 @@ const app = {
     let footer = `<span>已還 ${paid} 期</span><span>${pct}%</span>`;
     if (notStarted) {
       const daysUntil = Math.ceil((new Date(state.loan.start) - new Date(today)) / 86400000);
-      banner = `<div class="loan-status pending" role="status">🕒 尚未開始 · 首期 ${state.loan.start}${daysUntil > 0 ? ` (還有 ${daysUntil} 天)` : ''}</div>`;
+      banner = `<div class="loan-status pending" role="status"><span class="inline-ico">${icon('alert-triangle')}</span>尚未開始 · 首期 ${state.loan.start}${daysUntil > 0 ? ` (還有 ${daysUntil} 天)` : ''}</div>`;
       footer = `<span>尚未起算</span><span>${state.loan.months} 期 / ${moA > 0 ? Math.round(moA * state.loan.months).toLocaleString() : 0} 元</span>`;
     } else if (rem === 0) {
-      banner = `<div class="loan-status done" role="status">✓ 已清償</div>`;
+      banner = `<div class="loan-status done" role="status">已清償</div>`;
     }
 
     const moLabel = notStarted ? '每月將繳' : '每月應繳';
@@ -679,12 +660,12 @@ const app = {
       const hasFilter = search || state.mFilter !== 'all' || state.tFilter !== 'all';
       $('#list').innerHTML = hasFilter
         ? `<div class="empty-state">
-            <div class="empty-icon">🔎</div>
+            <div class="empty-icon">${icon('search')}</div>
             <div class="empty-title">沒有符合的記錄</div>
             <div class="empty-sub">試試清掉搜尋、切到「全部月份」或「全部類型」</div>
           </div>`
         : `<div class="empty-state">
-            <div class="empty-icon">📝</div>
+            <div class="empty-icon">${icon('inbox')}</div>
             <div class="empty-title">還沒有任何記錄</div>
             <div class="empty-sub">從「新增」頁開始記錄第一筆花費</div>
           </div>`;
@@ -697,11 +678,11 @@ const app = {
         const safeId = escapeHtml(r.id);
         return `<div class="item">
           <div class="item-actions">
-            <button type="button" class="edit" data-action="edit" data-id="${safeId}" aria-label="編輯"><span style="font-size:16px" aria-hidden="true">✏️</span>編輯</button>
-            <button type="button" class="del" data-action="del" data-id="${safeId}" aria-label="刪除"><span style="font-size:16px" aria-hidden="true">🗑️</span>刪除</button>
+            <button type="button" class="edit" data-action="edit" data-id="${safeId}" aria-label="編輯"><span class="act-ico" aria-hidden="true">${icon('pencil-line')}</span>編輯</button>
+            <button type="button" class="del" data-action="del" data-id="${safeId}" aria-label="刪除"><span class="act-ico" aria-hidden="true">${icon('trash')}</span>刪除</button>
           </div>
           <div class="item-body ${sw ? 'swiped' : ''}" data-swipe-id="${safeId}">
-            <div class="cat-dot" style="background:${meta.bg}" aria-hidden="true">${meta.icon}</div>
+            <div class="cat-dot" style="background:${meta.bg};color:${meta.color}" aria-hidden="true">${icon(meta.icon)}</div>
             <div class="item-info">
               <div class="item-name">${escapeHtml(r.cat)}${(() => {
                 const d = r.desc || this._legacyDesc(r);
@@ -775,7 +756,7 @@ const app = {
         .map(([c, v]) => {
           const meta = categoryMeta(c);
           return `<div class="bar-row">
-            <div class="bar-label">${meta.icon} ${escapeHtml(c)}</div>
+            <div class="bar-label"><span class="bar-label-ico" style="color:${meta.color}">${icon(meta.icon)}</span>${escapeHtml(c)}</div>
             <div class="bar-track"><div class="bar-fill" style="width:${Math.round((v / maxV) * 100)}%;background:${meta.color}"></div></div>
             <div class="bar-val">$${v.toLocaleString()} <span style="color:var(--text-ghost)">${grand ? Math.round((v / grand) * 100) : 0}%</span></div>
           </div>`;
@@ -786,7 +767,7 @@ const app = {
 
     $('#chart').innerHTML = !grand
       ? `<div class="empty-state">
-          <div class="empty-icon">📊</div>
+          <div class="empty-icon">${icon('bar-chart')}</div>
           <div class="empty-title">尚無資料</div>
           <div class="empty-sub">這個月份還沒有花費記錄,新增後會看到類別佔比</div>
         </div>`
@@ -828,9 +809,6 @@ const handleClick = (e) => {
     case 'selCat':
       haptic(5);
       return app.selCat(t.dataset.cat);
-    case 'quickCharge':
-      haptic(10);
-      return app.quickCharge();
     case 'submit':
       return app.submitForm();
     case 'cancelEdit':
@@ -896,6 +874,13 @@ if (!window.EV_CONFIG || !window.EV_CONFIG.GAS_URL) {
 
 $('#f-date').value = todayISO();
 $('#l-start').value = todayISO();
+
+// Prepend line icons to static CSV buttons
+const expBtn = document.getElementById('btn-export');
+const impBtn = document.getElementById('btn-import');
+if (expBtn) expBtn.innerHTML = `<span class="inline-ico">${icon('download')}</span>匯出 CSV`;
+if (impBtn) impBtn.innerHTML = `<span class="inline-ico">${icon('upload')}</span>匯入 CSV`;
+
 app.renderCats();
 app.renderNav();
 
@@ -969,7 +954,7 @@ document.addEventListener('keydown', (e) => {
       }
       if (dy > 20) {
         const pct = Math.min(dy / THRESHOLD, 1);
-        el.textContent = pct >= 1 ? '↓ 放開同步' : '⟳ 下拉同步';
+        el.textContent = pct >= 1 ? '放開同步' : '下拉同步';
         el.classList.add('show');
         el.style.transform = `translate(-50%, ${Math.min(dy - 40, 40)}px)`;
       }
@@ -987,7 +972,7 @@ document.addEventListener('keydown', (e) => {
       el.style.transform = '';
       if (dy >= THRESHOLD) {
         el.classList.add('show');
-        el.textContent = '⟳ 同步中…';
+        el.textContent = '同步中…';
         haptic(12);
         app.load().finally(() => setTimeout(() => el.classList.remove('show'), 400));
       } else {

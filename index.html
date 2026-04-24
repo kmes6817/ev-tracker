@@ -21,10 +21,14 @@
   </head>
   <body>
     <div id="ptr" class="ptr" aria-hidden="true">⟳ 下拉同步</div>
-    <header class="sync-bar">
+    <header class="sync-bar" id="sync-bar">
+      <span class="compact-title" id="compact-title">EV 費用追蹤</span>
       <span class="s" id="sync-msg" style="color: var(--text-ghost)">○ 初始化</span>
       <button type="button" data-action="reload" aria-label="重新整理">重新整理</button>
     </header>
+    <div class="large-title" id="large-title">
+      <h1>EV 費用追蹤</h1>
+    </div>
 
     <section class="stats" id="stats" aria-label="統計摘要"></section>
 

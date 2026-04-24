@@ -205,6 +205,10 @@ const app = {
   },
 
   cancelEdit() {
+    if (document.body.classList.contains('sheet-open')) {
+      this.closeSheet();
+      return;
+    }
     state.editId = null;
     this.clearForm();
     this.renderEditBar();
@@ -224,6 +228,12 @@ const app = {
     const date = $('#f-date').value;
     if (amt <= 0) return toast('請填寫有效金額', 'error');
     if (!date) return toast('請填寫日期', 'error');
+    // Validation passed — close sheet (if we were editing via one)
+    const wasSheet = document.body.classList.contains('sheet-open');
+    if (wasSheet) {
+      document.body.classList.remove('sheet-open');
+      state.fromTab = null;
+    }
     const kwh = safeParseFloat($('#f-kwh').value);
     const odo = safeParseInt($('#f-odo').value);
     const rec = {
@@ -261,6 +271,7 @@ const app = {
     const r = state.recs.find((x) => x.id === id);
     if (!r) return;
     state.editId = id;
+    state.fromTab = state.tab; // remember where we came from
     this.setType(r.type);
     state.fCat = r.cat;
     $('#f-amt').value = r.amt;
@@ -270,7 +281,28 @@ const app = {
     $('#f-kwh').value = r.kwh || '';
     $('#f-odo').value = r.odo || '';
     $('#ev-fields').classList.toggle('hide', r.cat !== '充電');
-    this.switchTab('add');
+    // If user invoked edit from the list/chart tab, open the add form as a sheet
+    // instead of navigating away from their context.
+    if (state.fromTab !== 'add') {
+      document.body.classList.add('sheet-open');
+      // Make sure the form is the visible panel within the card.
+      ['add', 'loan', 'list', 'chart'].forEach((t) => $('#tab-' + t).classList.toggle('hide', t !== 'add'));
+      this.renderEditBar();
+      this.renderCats();
+      this.renderCopyLast();
+    } else {
+      this.switchTab('add');
+    }
+  },
+
+  closeSheet() {
+    if (!document.body.classList.contains('sheet-open')) return;
+    document.body.classList.remove('sheet-open');
+    const back = state.fromTab || 'add';
+    state.fromTab = null;
+    state.editId = null;
+    this.clearForm();
+    this.switchTab(back);
   },
 
   delRec(id) {
@@ -779,6 +811,43 @@ setInterval(() => {
 const haptic = (ms = 10) => {
   if (navigator.vibrate) navigator.vibrate(ms);
 };
+
+// ========== Sheet dismissal ==========
+// Tap on the dimmed backdrop (anywhere outside #tab-add) closes the sheet.
+document.addEventListener('click', (e) => {
+  if (!document.body.classList.contains('sheet-open')) return;
+  if (!e.target.closest('#tab-add') && !e.target.closest('.toast-host')) {
+    e.stopPropagation();
+    app.closeSheet();
+  }
+});
+// Escape key closes the sheet too
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.body.classList.contains('sheet-open')) {
+    app.closeSheet();
+  }
+});
+
+// ========== Large-title scroll behaviour ==========
+(function setupScrollTitle() {
+  const bar = document.getElementById('sync-bar');
+  if (!bar) return;
+  let ticking = false;
+  const update = () => {
+    bar.classList.toggle('scrolled', window.scrollY > 32);
+    ticking = false;
+  };
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (!ticking) {
+        requestAnimationFrame(update);
+        ticking = true;
+      }
+    },
+    { passive: true }
+  );
+})();
 
 // ========== Pull-to-refresh ==========
 (function setupPtr() {

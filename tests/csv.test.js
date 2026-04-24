@@ -5,14 +5,14 @@ describe('recordsToCsv', () => {
   it('emits header and BOM', () => {
     const out = recordsToCsv([]);
     expect(out.charCodeAt(0)).toBe(0xfeff);
-    expect(out).toContain('id,date,type,cat,amt,kwh,odo,brand,note');
+    expect(out).toContain('id,date,type,cat,amt,kwh,odo,desc');
   });
 
   it('quotes fields containing commas, quotes, newlines', () => {
     const out = recordsToCsv([
-      { id: '1', date: '2026-04-22', type: 'r', cat: '其他', amt: 100, note: 'has, comma' },
-      { id: '2', date: '2026-04-22', type: 'r', cat: '其他', amt: 50, note: 'has "quote"' },
-      { id: '3', date: '2026-04-22', type: 'r', cat: '其他', amt: 20, note: 'line1\nline2' },
+      { id: '1', date: '2026-04-22', type: 'r', cat: '其他', amt: 100, desc: 'has, comma' },
+      { id: '2', date: '2026-04-22', type: 'r', cat: '其他', amt: 50, desc: 'has "quote"' },
+      { id: '3', date: '2026-04-22', type: 'r', cat: '其他', amt: 20, desc: 'line1\nline2' },
     ]);
     expect(out).toContain('"has, comma"');
     expect(out).toContain('"has ""quote"""');
@@ -22,40 +22,29 @@ describe('recordsToCsv', () => {
   it('omits undefined/null optional fields as empty', () => {
     const csv = recordsToCsv([{ id: '1', date: '2026-04-22', type: 'r', cat: '充電', amt: 100 }]);
     const dataLine = csv.split('\r\n')[1];
-    // kwh, odo, brand, note should be empty
-    expect(dataLine).toBe('1,2026-04-22,r,充電,100,,,,');
+    // kwh, odo, desc should be empty
+    expect(dataLine).toBe('1,2026-04-22,r,充電,100,,,');
   });
 });
 
 describe('csvToRecords', () => {
   it('parses the roundtrip of recordsToCsv', () => {
     const original = [
-      {
-        id: 'a',
-        date: '2026-04-22',
-        type: 'r',
-        cat: '充電',
-        amt: 300,
-        kwh: 30,
-        odo: 10000,
-        brand: '',
-        note: '',
-      },
-      {
-        id: 'b',
-        date: '2026-04-23',
-        type: 'o',
-        cat: '貼膜',
-        amt: 8000,
-        brand: '3M',
-        note: 'test,with,comma',
-      },
+      { id: 'a', date: '2026-04-22', type: 'r', cat: '充電', amt: 300, kwh: 30, odo: 10000, desc: '' },
+      { id: 'b', date: '2026-04-23', type: 'o', cat: '貼膜', amt: 8000, desc: '3M · test,with,comma' },
     ];
     const csv = recordsToCsv(original);
     const parsed = csvToRecords(csv);
     expect(parsed).toHaveLength(2);
     expect(parsed[0].kwh).toBe(30);
-    expect(parsed[1].note).toBe('test,with,comma');
+    expect(parsed[1].desc).toBe('3M · test,with,comma');
+  });
+
+  it('migrates legacy brand+note CSV columns into desc', () => {
+    const csv = 'id,date,type,cat,amt,brand,note\n1,2026-04-22,r,貼膜,8000,3M,chrome finish';
+    const parsed = csvToRecords(csv);
+    expect(parsed[0].desc).toBe('3M · chrome finish');
+    expect(parsed[0].brand).toBeUndefined();
   });
 
   it('handles BOM and CRLF', () => {
@@ -70,8 +59,8 @@ describe('csvToRecords', () => {
   });
 
   it('preserves escaped quotes', () => {
-    const csv = 'id,date,type,cat,amt,note\n1,2026-04-22,r,其他,100,"say ""hi"""';
-    expect(csvToRecords(csv)[0].note).toBe('say "hi"');
+    const csv = 'id,date,type,cat,amt,desc\n1,2026-04-22,r,其他,100,"say ""hi"""';
+    expect(csvToRecords(csv)[0].desc).toBe('say "hi"');
   });
 });
 

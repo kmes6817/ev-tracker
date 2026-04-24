@@ -20,11 +20,14 @@ const SHARED_TOKEN = PropertiesService.getScriptProperties().getProperty('SHARED
 
 const RECORDS_SHEET = 'records';
 const LOAN_SHEET = 'loan';
-const RECORD_HEADERS = ['id', 'cat', 'amt', 'date', 'type', 'brand', 'note', 'kwh', 'odo'];
+const RECORD_HEADERS = ['id', 'cat', 'amt', 'date', 'type', 'desc', 'kwh', 'odo'];
 const LOAN_HEADERS = ['price', 'down', 'rate', 'months', 'start'];
 
-// Legacy headers (pre-v0.2) — used for migration if the sheet still has the old layout.
-const LEGACY_RECORD_HEADERS = ['id', 'cat', 'amt', 'date', 'type', 'brand', 'note'];
+// Legacy headers — previous schemas. If the sheet still has the old layout
+// we read them, merge brand+note → desc, and on next save the column order
+// is rewritten to the new layout.
+const LEGACY_HEADER_V1 = ['id', 'cat', 'amt', 'date', 'type', 'brand', 'note'];
+const LEGACY_HEADER_V2 = ['id', 'cat', 'amt', 'date', 'type', 'brand', 'note', 'kwh', 'odo'];
 
 function _json(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(
@@ -101,20 +104,44 @@ function _load() {
 
   const recValues = recSh.getDataRange().getValues();
   const records = [];
+  if (recValues.length === 0) {
+    return { records: [], loan: null };
+  }
+  // Map header name → column index so we're not brittle to column order.
+  const headerRow = recValues[0].map(function (h) {
+    return String(h || '').toLowerCase();
+  });
+  const col = {};
+  headerRow.forEach(function (name, i) {
+    col[name] = i;
+  });
+  function get(row, name) {
+    const i = col[name];
+    return i == null || i < 0 ? undefined : row[i];
+  }
   for (let i = 1; i < recValues.length; i++) {
     const row = recValues[i];
-    if (!row[0]) continue;
+    if (!get(row, 'id')) continue;
+    const dateVal = get(row, 'date');
+    // Collapse legacy brand+note columns into desc if desc is empty
+    let desc = String(get(row, 'desc') || '');
+    if (!desc) {
+      const brand = String(get(row, 'brand') || '').trim();
+      const note = String(get(row, 'note') || '').trim();
+      desc = [brand, note].filter(function (x) { return x; }).join(' · ');
+    }
     const rec = {
-      id: String(row[0]),
-      cat: row[1],
-      amt: Number(row[2]) || 0,
-      date: row[3] instanceof Date ? Utilities.formatDate(row[3], 'Asia/Taipei', 'yyyy-MM-dd') : String(row[3] || ''),
-      type: row[4] || 'r',
-      brand: row[5] || '',
-      note: row[6] || '',
+      id: String(get(row, 'id')),
+      cat: String(get(row, 'cat') || ''),
+      amt: Number(get(row, 'amt')) || 0,
+      date: dateVal instanceof Date
+        ? Utilities.formatDate(dateVal, 'Asia/Taipei', 'yyyy-MM-dd')
+        : String(dateVal || ''),
+      type: String(get(row, 'type') || 'r'),
+      desc: desc,
     };
-    const kwh = Number(row[7]);
-    const odo = Number(row[8]);
+    const kwh = Number(get(row, 'kwh'));
+    const odo = Number(get(row, 'odo'));
     if (kwh > 0) rec.kwh = kwh;
     if (odo > 0) rec.odo = odo;
     records.push(rec);
@@ -142,17 +169,15 @@ function _save(records, loan) {
   recSh.clearContents();
   recSh.appendRow(RECORD_HEADERS);
   if (records.length) {
-    const rows = records.map((r) => [
-      r.id,
-      r.cat,
-      r.amt,
-      r.date,
-      r.type,
-      r.brand || '',
-      r.note || '',
-      r.kwh || '',
-      r.odo || '',
-    ]);
+    const rows = records.map(function (r) {
+      // Migrate in case records still have legacy brand/note fields
+      let desc = r.desc || '';
+      if (!desc) {
+        const parts = [r.brand, r.note].filter(function (x) { return x && String(x).trim(); });
+        desc = parts.join(' · ');
+      }
+      return [r.id, r.cat, r.amt, r.date, r.type, desc, r.kwh || '', r.odo || ''];
+    });
     recSh.getRange(2, 1, rows.length, RECORD_HEADERS.length).setValues(rows);
   }
 

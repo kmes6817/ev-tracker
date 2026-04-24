@@ -123,16 +123,12 @@ const app = {
   },
 
   setSync(status, msg) {
-    const colors = {
-      idle: 'var(--text-ghost)',
-      loading: 'var(--warn-text)',
-      ok: 'var(--success)',
-      error: 'var(--danger)',
-    };
+    // Persistent top bar removed — status updates the off-screen live region
+    // (for screen readers) and surfaces errors as toasts.
     const icons = { idle: '○', loading: '⟳', ok: '✓', error: '✕' };
     const el = $('#sync-msg');
-    el.style.color = colors[status];
-    el.textContent = `${icons[status]} ${msg}`;
+    if (el) el.textContent = `${icons[status]} ${msg}`;
+    if (status === 'error') toast(msg, 'error', 3200);
   },
 
   setType(t) {
@@ -911,27 +907,6 @@ document.addEventListener('keydown', (e) => {
     app.closeSheet();
   }
 });
-
-// ========== Large-title scroll behaviour ==========
-(function setupScrollTitle() {
-  const bar = document.getElementById('sync-bar');
-  if (!bar) return;
-  let ticking = false;
-  const update = () => {
-    bar.classList.toggle('scrolled', window.scrollY > 32);
-    ticking = false;
-  };
-  window.addEventListener(
-    'scroll',
-    () => {
-      if (!ticking) {
-        requestAnimationFrame(update);
-        ticking = true;
-      }
-    },
-    { passive: true }
-  );
-})();
 
 // ========== Pull-to-refresh ==========
 (function setupPtr() {

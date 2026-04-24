@@ -21,14 +21,10 @@
   </head>
   <body>
     <div id="ptr" class="ptr" aria-hidden="true">⟳ 下拉同步</div>
-    <header class="sync-bar" id="sync-bar">
-      <span class="compact-title" id="compact-title">擁車費用記錄</span>
-      <span class="s" id="sync-msg" style="color: var(--text-ghost)">○ 初始化</span>
-      <button type="button" data-action="reload" aria-label="重新整理">重新整理</button>
-    </header>
-    <div class="large-title" id="large-title">
-      <h1>擁車費用記錄</h1>
-    </div>
+    <!-- Sync status is now surface-only via toasts (no persistent top bar).
+         Kept #sync-msg as an off-screen ARIA live region so screen readers
+         still hear sync state changes. Manual reload = pull down. -->
+    <span id="sync-msg" class="visually-hidden" role="status" aria-live="polite">○ 初始化</span>
 
     <section class="stats" id="stats" aria-label="統計摘要"></section>
 

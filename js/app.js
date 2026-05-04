@@ -20,6 +20,14 @@ import {
 import { computeEvStats } from './extensions/ev/stats.js';
 import { evaluateBudget, getBudget, setBudget } from './extensions/budget/budget.js';
 import {
+  addRecurring,
+  removeRecurring,
+  listRecurring,
+  totalForMonth as recurringTotalForMonth,
+  KINDS as RECURRING_KINDS,
+  KIND_LABELS as RECURRING_KIND_LABELS,
+} from './extensions/recurring/recurring.js';
+import {
   MAIN_LEDGER,
   listLedgers,
   getActiveLedger,
@@ -597,15 +605,19 @@ const app = {
     else if (moForShown) costSub = `含月供 $${moForShown.toLocaleString()}`;
     else costSub = `月供 $${moFull.toLocaleString()} 尚未起算`;
 
-    const heroValue = (mAmt + moForShown).toLocaleString();
+    // Recurring (subscriptions/rent/etc) for the shown month
+    const recurringMo = recurringTotalForMonth(shownMonth, state.ledger);
+
+    const heroValue = (mAmt + moForShown + recurringMo).toLocaleString();
 
     // Month-over-month comparison — vs the previous month's same figure
     const prevMonth = this.shiftMonth(shownMonth, -1);
     const prevAmt = recs.filter((r) => r.date.slice(0, 7) === prevMonth).reduce((s, r) => s + r.amt, 0);
     const prevMoEnd = `${prevMonth}-31`;
     const prevMoForPrev = state.loan && state.loan.start <= prevMoEnd ? moFull : 0;
-    const prevTotal = prevAmt + prevMoForPrev;
-    const curTotal = mAmt + moForShown;
+    const prevRecurring = recurringTotalForMonth(prevMonth, state.ledger);
+    const prevTotal = prevAmt + prevMoForPrev + prevRecurring;
+    const curTotal = mAmt + moForShown + recurringMo;
     let momBadge = '';
     if (prevTotal > 0 || curTotal > 0) {
       const diff = curTotal - prevTotal;
@@ -724,6 +736,71 @@ const app = {
         <div class="ev-cell"><div class="ev-l">kWh/100km</div><div class="ev-v">${fmt(s.kwhPer100km, 1)}</div></div>
       </div>
     </div>`;
+  },
+
+  renderRecurring() {
+    const el = $('#recurring-display');
+    if (!el) return;
+    const items = listRecurring(state.ledger);
+    if (!items.length) {
+      el.innerHTML = `<div class="recurring-empty">尚未設定任何訂閱／租金／其他週期性支出。點下方「新增週期支出」開始。</div>`;
+      return;
+    }
+    const ym = currentYearMonth();
+    el.innerHTML = `<div class="sect-title" style="margin-top:18px">週期性支出</div>
+      <div class="recurring-list">${items
+        .map((r) => {
+          const monthly = recurringTotalForMonth.call ? 0 : 0; // unused; per-row label below
+          const cadence = r.everyNMonths > 1 ? `每 ${r.everyNMonths} 個月` : '每月';
+          const ended = r.end && ym > r.end.slice(0, 7);
+          return `<div class="recurring-row${ended ? ' ended' : ''}">
+            <div class="recurring-l">
+              <div class="recurring-name">${escapeHtml(r.name)}</div>
+              <div class="recurring-meta">${escapeHtml(RECURRING_KIND_LABELS[r.kind] || r.kind)} · ${escapeHtml(cadence)} · 起 ${escapeHtml(r.start)}${r.end ? ` · 止 ${escapeHtml(r.end)}` : ''}</div>
+            </div>
+            <div class="recurring-r">
+              <div class="recurring-amt">$${r.amount.toLocaleString()}</div>
+              <button type="button" class="recurring-del" data-action="deleteRecurring" data-id="${escapeHtml(r.id)}" aria-label="刪除">${icon('trash')}</button>
+            </div>
+          </div>`;
+        })
+        .join('')}
+      </div>
+      <div class="recurring-foot">本月小計 $${recurringTotalForMonth(ym, state.ledger).toLocaleString()}</div>`;
+  },
+
+  promptAddRecurring() {
+    const kindIdx = window.prompt(
+      '選擇種類:\n1 訂閱\n2 租金\n3 貸款(獨立於上方車貸)\n4 其他\n\n輸入數字 1-4:',
+      '1'
+    );
+    if (!kindIdx) return;
+    const kind = RECURRING_KINDS[Number(kindIdx) - 1];
+    if (!kind) return toast('無效種類', 'error');
+    const name = (window.prompt('名稱(例:Netflix、房租):', '') || '').trim();
+    if (!name) return;
+    const amountStr = window.prompt('金額(每期):', '');
+    const amount = Number(amountStr);
+    if (!Number.isFinite(amount) || amount <= 0) return toast('金額無效', 'error');
+    const start = window.prompt('起始日 yyyy-mm-dd:', todayISO());
+    if (!start) return;
+    const everyStr = window.prompt('每幾個月一次?(月繳=1、年繳=12):', '1');
+    const everyNMonths = Number(everyStr) || 1;
+    try {
+      addRecurring({ kind, name, amount, start, everyNMonths, ledger: state.ledger });
+      toast(`已新增「${name}」`);
+      this.renderAll();
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  },
+
+  deleteRecurring(id) {
+    if (!window.confirm('確定刪除這筆週期性支出?')) return;
+    if (removeRecurring(id)) {
+      this.renderAll();
+      toast('已刪除');
+    }
   },
 
   renderLoan() {
@@ -936,7 +1013,10 @@ const app = {
     this.renderNav();
     this.renderEditBar();
     this.renderCats();
-    if (state.tab === 'loan') this.renderLoan();
+    if (state.tab === 'loan') {
+      this.renderLoan();
+      this.renderRecurring();
+    }
     if (state.tab === 'list') this.renderList();
     if (state.tab === 'chart') {
       this.renderBudget();
@@ -999,6 +1079,11 @@ const handleClick = (e) => {
       return app.promptAddLedger();
     case 'removeLedger':
       return app.promptRemoveLedger();
+    case 'addRecurring':
+      return app.promptAddRecurring();
+    case 'deleteRecurring':
+      e.stopPropagation();
+      return app.deleteRecurring(t.dataset.id);
     case 'toggleHeroExpand':
       return app.toggleHeroExpand();
     case 'prevHeroMonth':

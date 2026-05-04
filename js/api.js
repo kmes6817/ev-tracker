@@ -8,7 +8,7 @@ const LS_PENDING = 'ev_pending_v2';
 const LEGACY_RECORDS = 'ev_records';
 const LEGACY_LOAN = 'ev_loan';
 
-const getConfig = () => window.EV_CONFIG || {};
+const getConfig = () => window.APP_CONFIG || window.EV_CONFIG || {};
 
 const readLocal = () => {
   try {

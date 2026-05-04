@@ -306,7 +306,7 @@ const app = {
   exportCsv() {
     if (!state.recs.length) return toast('沒有記錄可匯出', 'error');
     const stamp = todayISO().replace(/-/g, '');
-    downloadBlob(recordsToCsv(state.recs), `ev-tracker-${stamp}.csv`);
+    downloadBlob(recordsToCsv(state.recs), `cashbook-${stamp}.csv`);
     toast(`已匯出 ${state.recs.length} 筆`);
   },
 
@@ -428,8 +428,8 @@ const app = {
     if (!state.recs.length && !state.loan) {
       $('#stats').innerHTML = `<div class="onboarding">
         <div class="onboarding-ico" aria-hidden="true">${icon('sparkles')}</div>
-        <div class="onboarding-title">歡迎使用擁車費用記錄</div>
-        <div class="onboarding-sub">從下方選一個類別,填入金額就能開始記錄。先設貸款可看到每月總擁車成本。</div>
+        <div class="onboarding-title">歡迎使用記帳本</div>
+        <div class="onboarding-sub">從下方選一個類別,填入金額就能開始記錄。也可在「貸款」頁試算每月應繳。</div>
       </div>`;
       return;
     }
@@ -521,7 +521,7 @@ const app = {
         <button type="button" class="hero-month-btn" data-action="nextHeroMonth" aria-label="下個月" ${canGoNext ? '' : 'disabled aria-disabled="true"'}>${icon('chevron-right')}</button>
       </div>
       <button type="button" class="stat hero${state.heroExpanded ? ' expanded' : ''}" data-action="toggleHeroExpand" aria-expanded="${state.heroExpanded}">
-        <div class="stat-l">${isCurrent ? '本月' : '該月'}擁車成本</div>
+        <div class="stat-l">${isCurrent ? '本月' : '該月'}支出</div>
         <div class="stat-v">$${escapeHtml(heroValue)}</div>
         <div class="stat-sub-row">
           ${costSub ? `<span class="stat-s">${escapeHtml(costSub)}</span>` : '<span></span>'}
@@ -864,7 +864,8 @@ document.addEventListener('touchend', handleTouchEnd, { passive: true });
 document.addEventListener('input', handleInput);
 document.addEventListener('change', handleChange);
 
-if (!window.EV_CONFIG || !window.EV_CONFIG.GAS_URL) {
+const __cfg = window.APP_CONFIG || window.EV_CONFIG;
+if (!__cfg || !__cfg.GAS_URL) {
   const warn = document.createElement('div');
   warn.style.cssText =
     'background:var(--warn-bg);padding:12px 16px;border-bottom:1px solid var(--warn-border);font-size:13px;color:var(--warn-text)';

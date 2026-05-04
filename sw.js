@@ -1,5 +1,5 @@
 // Simple cache-first service worker for app shell; network-first for API.
-const CACHE = 'cashbook-v4';
+const CACHE = 'cashbook-v5';
 const SHELL = [
   './',
   './index.html',
@@ -18,6 +18,7 @@ const SHELL = [
   './js/extensions/ev/stats.js',
   './js/extensions/general/stats.js',
   './js/extensions/budget/budget.js',
+  './js/extensions/recurring/recurring.js',
   './manifest.webmanifest',
   './icons/icon.svg',
 ];

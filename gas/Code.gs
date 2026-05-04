@@ -21,7 +21,7 @@ const SHARED_TOKEN = PropertiesService.getScriptProperties().getProperty('SHARED
 
 const RECORDS_SHEET = 'records';
 const LOAN_SHEET = 'loan';
-const RECORD_HEADERS = ['id', 'cat', 'amt', 'date', 'type', 'desc', 'kwh', 'odo'];
+const RECORD_HEADERS = ['id', 'cat', 'amt', 'date', 'type', 'desc', 'kwh', 'odo', 'ledger'];
 const LOAN_HEADERS = ['price', 'down', 'rate', 'months', 'start'];
 
 // Legacy headers — previous schemas. If the sheet still has the old layout
@@ -145,6 +145,8 @@ function _load() {
     const odo = Number(get(row, 'odo'));
     if (kwh > 0) rec.kwh = kwh;
     if (odo > 0) rec.odo = odo;
+    const ledger = String(get(row, 'ledger') || '').trim();
+    if (ledger) rec.ledger = ledger;
     records.push(rec);
   }
   records.sort((a, b) => b.date.localeCompare(a.date));
@@ -177,7 +179,7 @@ function _save(records, loan) {
         const parts = [r.brand, r.note].filter(function (x) { return x && String(x).trim(); });
         desc = parts.join(' · ');
       }
-      return [r.id, r.cat, r.amt, r.date, r.type, desc, r.kwh || '', r.odo || ''];
+      return [r.id, r.cat, r.amt, r.date, r.type, desc, r.kwh || '', r.odo || '', r.ledger || ''];
     });
     recSh.getRange(2, 1, rows.length, RECORD_HEADERS.length).setValues(rows);
   }

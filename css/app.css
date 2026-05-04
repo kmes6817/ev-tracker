@@ -813,6 +813,35 @@ select:focus {
   text-align: right;
 }
 
+/* ---------- Ledger bar (multi-ledger) ---------- */
+.ledger-bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 12px 0;
+  font-size: 12px;
+}
+.ledger-bar select {
+  flex: 1;
+  height: 32px;
+  font-size: 13px;
+  padding: 0 8px;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+.ledger-btn {
+  width: 32px;
+  height: 32px;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: 16px;
+  line-height: 1;
+}
+
 /* ---------- Buttons ---------- */
 .btn-primary {
   width: 100%;

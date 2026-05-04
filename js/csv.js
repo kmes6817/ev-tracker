@@ -2,7 +2,7 @@
 // Uses RFC 4180 quoting: fields with comma, quote, CR, or LF get wrapped in
 // double quotes; literal quotes are doubled.
 
-const HEADERS = ['id', 'date', 'type', 'cat', 'amt', 'kwh', 'odo', 'desc'];
+const HEADERS = ['id', 'date', 'type', 'cat', 'amt', 'kwh', 'odo', 'desc', 'ledger'];
 // Legacy columns we still accept on import and merge into `desc`.
 const LEGACY_DESC_COLS = ['brand', 'note'];
 
@@ -108,6 +108,8 @@ export function csvToRecords(text) {
     const odo = Number(get('odo'));
     if (kwh > 0) rec.kwh = kwh;
     if (odo > 0) rec.odo = odo;
+    const ledger = String(get('ledger') || '').trim();
+    if (ledger) rec.ledger = ledger;
     return rec;
   });
 }

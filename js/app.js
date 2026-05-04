@@ -19,6 +19,15 @@ import {
 } from './categories.js';
 import { computeEvStats } from './extensions/ev/stats.js';
 import { evaluateBudget, getBudget, setBudget } from './extensions/budget/budget.js';
+import {
+  MAIN_LEDGER,
+  listLedgers,
+  getActiveLedger,
+  setActiveLedger,
+  addLedger,
+  removeLedger,
+  recordsInLedger,
+} from './ledgers.js';
 import { recordsToCsv, csvToRecords, mergeImported, downloadBlob } from './csv.js';
 import { icon } from './icons.js';
 import { api } from './api.js';
@@ -27,6 +36,7 @@ const state = {
   tab: 'add',
   recs: [],
   loan: null,
+  ledger: getActiveLedger(),
   editId: null,
   swipedId: null,
   fType: 'r',
@@ -137,6 +147,58 @@ const app = {
     const el = $('#sync-msg');
     if (el) el.textContent = `${icons[status]} ${msg}`;
     if (status === 'error') toast(msg, 'error', 3200);
+  },
+
+  /** Records filtered to the active ledger. All renders should use this
+   *  rather than state.recs directly, so a ledger switch updates the view. */
+  currentRecs() {
+    return recordsInLedger(state.recs, state.ledger);
+  },
+
+  renderLedgerBar() {
+    const sel = $('#ledger-select');
+    if (!sel) return;
+    const ledgers = listLedgers();
+    const labels = { [MAIN_LEDGER]: '主帳本' };
+    sel.innerHTML = ledgers
+      .map((l) => `<option value="${escapeHtml(l)}"${l === state.ledger ? ' selected' : ''}>${escapeHtml(labels[l] || l)}</option>`)
+      .join('');
+  },
+
+  switchLedger(name) {
+    if (!setActiveLedger(name)) return;
+    state.ledger = name;
+    state.heroMonth = null;
+    state.heroExpanded = false;
+    this.renderAll();
+  },
+
+  promptAddLedger() {
+    const name = (window.prompt('新增帳本名稱(最多 16 字):', '') || '').trim();
+    if (!name) return;
+    try {
+      addLedger(name);
+      state.ledger = name;
+      setActiveLedger(name);
+      this.renderAll();
+      toast(`已新增帳本「${name}」`);
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  },
+
+  promptRemoveLedger() {
+    if (state.ledger === MAIN_LEDGER) return toast('無法刪除主帳本', 'error');
+    if (!window.confirm(`刪除帳本「${state.ledger}」?該帳本中的紀錄會保留但不再顯示,直到重新建立同名帳本。`)) return;
+    const removed = state.ledger;
+    try {
+      removeLedger(removed);
+      state.ledger = MAIN_LEDGER;
+      this.renderAll();
+      toast(`已刪除帳本「${removed}」`);
+    } catch (e) {
+      toast(e.message, 'error');
+    }
   },
 
   /** True if the selected category should reveal the kwh/odo extra fields. */
@@ -266,6 +328,7 @@ const app = {
       date,
       desc: $('#f-desc').value.trim(),
       type: state.fType,
+      ...(state.ledger && state.ledger !== MAIN_LEDGER ? { ledger: state.ledger } : {}),
       ...(this._hasEvFields(state.fCat) && kwh > 0 ? { kwh } : {}),
       ...(this._hasEvFields(state.fCat) && odo > 0 ? { odo } : {}),
     };
@@ -292,7 +355,7 @@ const app = {
   },
 
   _budgetCheck() {
-    const b = evaluateBudget(state.recs, currentYearMonth());
+    const b = evaluateBudget(this.currentRecs(), currentYearMonth());
     if (!b) return;
     if (b.level === 'over') toast(`本月已超出預算 $${Math.round(-b.remaining).toLocaleString()}`, 'error', 3500);
     else if (b.level === 'warn') toast(`本月已用 ${Math.round(b.pct)}% 預算`, 'info');
@@ -374,10 +437,11 @@ const app = {
   },
 
   exportCsv() {
-    if (!state.recs.length) return toast('沒有記錄可匯出', 'error');
+    const recs = this.currentRecs();
+    if (!recs.length) return toast('沒有記錄可匯出', 'error');
     const stamp = todayISO().replace(/-/g, '');
-    downloadBlob(recordsToCsv(state.recs), `cashbook-${stamp}.csv`);
-    toast(`已匯出 ${state.recs.length} 筆`);
+    downloadBlob(recordsToCsv(recs), `cashbook-${state.ledger}-${stamp}.csv`);
+    toast(`已匯出 ${recs.length} 筆`);
   },
 
   triggerImport() {
@@ -495,7 +559,8 @@ const app = {
   },
 
   renderStats() {
-    if (!state.recs.length && !state.loan) {
+    const recs = this.currentRecs();
+    if (!recs.length && !state.loan) {
       $('#stats').innerHTML = `<div class="onboarding">
         <div class="onboarding-ico" aria-hidden="true">${icon('sparkles')}</div>
         <div class="onboarding-title">歡迎使用記帳本</div>
@@ -510,12 +575,12 @@ const app = {
     const isCurrent = shownMonth === curMonth;
 
     // Records for the shown month (for hero figure)
-    const monthRecs = state.recs.filter((r) => r.date.slice(0, 7) === shownMonth);
+    const monthRecs = recs.filter((r) => r.date.slice(0, 7) === shownMonth);
     const mAmt = monthRecs.reduce((s, r) => s + r.amt, 0);
 
     // All-time totals (for pills below)
-    const total = state.recs.reduce((s, r) => s + r.amt, 0);
-    const oAmt = state.recs.filter((r) => r.type === 'o').reduce((s, r) => s + r.amt, 0);
+    const total = recs.reduce((s, r) => s + r.amt, 0);
+    const oAmt = recs.filter((r) => r.type === 'o').reduce((s, r) => s + r.amt, 0);
 
     // Loan status — only include monthly payment in months AFTER start date
     const loanActive = !!state.loan && state.loan.start <= today;
@@ -536,7 +601,7 @@ const app = {
 
     // Month-over-month comparison — vs the previous month's same figure
     const prevMonth = this.shiftMonth(shownMonth, -1);
-    const prevAmt = state.recs.filter((r) => r.date.slice(0, 7) === prevMonth).reduce((s, r) => s + r.amt, 0);
+    const prevAmt = recs.filter((r) => r.date.slice(0, 7) === prevMonth).reduce((s, r) => s + r.amt, 0);
     const prevMoEnd = `${prevMonth}-31`;
     const prevMoForPrev = state.loan && state.loan.start <= prevMoEnd ? moFull : 0;
     const prevTotal = prevAmt + prevMoForPrev;
@@ -620,7 +685,7 @@ const app = {
   renderBudget() {
     const el = $('#budget-display');
     if (!el) return;
-    const b = evaluateBudget(state.recs, currentYearMonth());
+    const b = evaluateBudget(this.currentRecs(), currentYearMonth());
     if (!b) {
       el.innerHTML = '';
       return;
@@ -638,7 +703,7 @@ const app = {
     const el = $('#ev-stats');
     if (!el) return;
     const ym = state.cMonth === 'all' ? null : state.cMonth;
-    const s = computeEvStats(state.recs, ym);
+    const s = computeEvStats(this.currentRecs(), ym);
     if (s.sessions === 0) {
       el.innerHTML = '';
       return;
@@ -703,7 +768,8 @@ const app = {
   },
 
   renderList() {
-    const months = [...new Set(state.recs.map((r) => r.date.slice(0, 7)))].sort().reverse();
+    const recs = this.currentRecs();
+    const months = [...new Set(recs.map((r) => r.date.slice(0, 7)))].sort().reverse();
     const mSel = $('#m-filter');
     mSel.innerHTML =
       '<option value="all">全部月份</option>' +
@@ -728,7 +794,7 @@ const app = {
     state.mFilter = mSel.value;
     state.tFilter = $('#t-filter').value;
 
-    const d = state.recs.filter(
+    const d = recs.filter(
       (r) =>
         (state.mFilter === 'all' || r.date.slice(0, 7) === state.mFilter) &&
         (state.tFilter === 'all' || r.type === state.tFilter) &&
@@ -788,7 +854,8 @@ const app = {
   },
 
   renderChart() {
-    const months = [...new Set(state.recs.map((r) => r.date.slice(0, 7)))].sort().reverse();
+    const recs = this.currentRecs();
+    const months = [...new Set(recs.map((r) => r.date.slice(0, 7)))].sort().reverse();
     const cm = $('#c-month');
     cm.innerHTML =
       '<option value="all">全部月份</option>' +
@@ -801,7 +868,7 @@ const app = {
 
     // Trend
     const bm = {};
-    state.recs.forEach((r) => {
+    recs.forEach((r) => {
       const m = r.date.slice(0, 7);
       bm[m] = (bm[m] || 0) + r.amt;
     });
@@ -825,7 +892,7 @@ const app = {
     }
 
     // Bars
-    const filtered = state.recs.filter((r) => state.cMonth === 'all' || r.date.slice(0, 7) === state.cMonth);
+    const filtered = recs.filter((r) => state.cMonth === 'all' || r.date.slice(0, 7) === state.cMonth);
     const grand = filtered.reduce((s, r) => s + r.amt, 0);
     const daily = {},
       once = {};
@@ -864,6 +931,7 @@ const app = {
   },
 
   renderAll() {
+    this.renderLedgerBar();
     this.renderStats();
     this.renderNav();
     this.renderEditBar();
@@ -927,6 +995,10 @@ const handleClick = (e) => {
       return app.triggerImport();
     case 'setBudget':
       return app.openBudgetPrompt();
+    case 'addLedger':
+      return app.promptAddLedger();
+    case 'removeLedger':
+      return app.promptRemoveLedger();
     case 'toggleHeroExpand':
       return app.toggleHeroExpand();
     case 'prevHeroMonth':
@@ -950,6 +1022,7 @@ const handleInput = (e) => {
 const handleChange = (e) => {
   if (e.target.id === 'm-filter' || e.target.id === 't-filter') app.renderList();
   if (e.target.id === 'c-month') app.renderChart();
+  if (e.target.id === 'ledger-select') app.switchLedger(e.target.value);
   if (e.target.id === 'csv-file' && e.target.files[0]) {
     app.importCsvFile(e.target.files[0]);
     e.target.value = '';

@@ -26,6 +26,13 @@
          still hear sync state changes. Manual reload = pull down. -->
     <span id="sync-msg" class="visually-hidden" role="status" aria-live="polite">○ 初始化</span>
 
+    <div class="ledger-bar" role="group" aria-label="帳本切換">
+      <label for="ledger-select" class="visually-hidden">當前帳本</label>
+      <select id="ledger-select"></select>
+      <button type="button" class="ledger-btn" data-action="addLedger" aria-label="新增帳本">+</button>
+      <button type="button" class="ledger-btn" data-action="removeLedger" aria-label="刪除目前帳本">×</button>
+    </div>
+
     <section class="stats" id="stats" aria-label="統計摘要"></section>
 
     <main class="card">

@@ -1,7 +1,7 @@
 {
-  "name": "ev-tracker",
-  "version": "0.2.0",
-  "description": "EV cost tracking PWA with Google Sheets sync",
+  "name": "cashbook",
+  "version": "0.3.0",
+  "description": "Personal cashbook — mobile-first expense tracking PWA with Google Sheets sync",
   "private": true,
   "type": "module",
   "scripts": {
@@ -26,6 +26,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kmes6817/ev-tracker.git"
+    "url": "https://github.com/kmes6817/cashbook.git"
   }
 }

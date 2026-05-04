@@ -1,5 +1,6 @@
 /**
- * EV Tracker — Google Apps Script backend.
+ * Cashbook — Google Apps Script backend.
+ * (Originally ev-tracker; rename PR #6.)
  *
  * Setup:
  *  1. Create a Google Sheet. Copy the ID from the URL.

@@ -17,7 +17,8 @@ import {
   removeCustomCategory,
   isCustomCategory,
 } from './categories.js';
-import { computeEvStats } from './evStats.js';
+import { computeEvStats } from './extensions/ev/stats.js';
+import { evaluateBudget, getBudget, setBudget } from './extensions/budget/budget.js';
 import { recordsToCsv, csvToRecords, mergeImported, downloadBlob } from './csv.js';
 import { icon } from './icons.js';
 import { api } from './api.js';
@@ -286,6 +287,31 @@ const app = {
     }
     this.clearForm();
     this.save();
+    this.renderAll();
+    this._budgetCheck();
+  },
+
+  _budgetCheck() {
+    const b = evaluateBudget(state.recs, currentYearMonth());
+    if (!b) return;
+    if (b.level === 'over') toast(`本月已超出預算 $${Math.round(-b.remaining).toLocaleString()}`, 'error', 3500);
+    else if (b.level === 'warn') toast(`本月已用 ${Math.round(b.pct)}% 預算`, 'info');
+  },
+
+  openBudgetPrompt() {
+    const cur = getBudget();
+    const input = window.prompt('每月預算金額(留空清除):', cur != null ? String(cur) : '');
+    if (input === null) return;
+    const trimmed = input.trim();
+    if (trimmed === '') {
+      setBudget(null);
+      toast('已清除預算');
+    } else {
+      const n = Number(trimmed);
+      if (!Number.isFinite(n) || n < 0) return toast('請輸入有效數字', 'error');
+      setBudget(n);
+      toast(n > 0 ? `已設定預算 $${n.toLocaleString()}` : '已清除預算');
+    }
     this.renderAll();
   },
 
@@ -591,6 +617,23 @@ const app = {
     `;
   },
 
+  renderBudget() {
+    const el = $('#budget-display');
+    if (!el) return;
+    const b = evaluateBudget(state.recs, currentYearMonth());
+    if (!b) {
+      el.innerHTML = '';
+      return;
+    }
+    const pct = Math.min(b.pct, 100);
+    const colour = b.level === 'over' ? '#E24B4A' : b.level === 'warn' ? '#EF9F27' : '#1D9E75';
+    el.innerHTML = `<div class="budget-card" role="status">
+      <div class="budget-row"><span>本月預算</span><span>$${b.spent.toLocaleString()} / $${b.limit.toLocaleString()}</span></div>
+      <div class="progress" role="progressbar" aria-valuenow="${Math.round(b.pct)}" aria-valuemin="0" aria-valuemax="100"><div class="progress-fill" style="width:${pct}%;background:${colour}"></div></div>
+      <div class="budget-foot" style="color:${colour}">${b.level === 'over' ? `已超出 $${Math.round(-b.remaining).toLocaleString()}` : `剩餘 $${Math.round(b.remaining).toLocaleString()}`}</div>
+    </div>`;
+  },
+
   renderEvStats() {
     const el = $('#ev-stats');
     if (!el) return;
@@ -827,7 +870,10 @@ const app = {
     this.renderCats();
     if (state.tab === 'loan') this.renderLoan();
     if (state.tab === 'list') this.renderList();
-    if (state.tab === 'chart') this.renderChart();
+    if (state.tab === 'chart') {
+      this.renderBudget();
+      this.renderChart();
+    }
   },
 };
 
@@ -879,6 +925,8 @@ const handleClick = (e) => {
       return app.exportCsv();
     case 'importCsv':
       return app.triggerImport();
+    case 'setBudget':
+      return app.openBudgetPrompt();
     case 'toggleHeroExpand':
       return app.toggleHeroExpand();
     case 'prevHeroMonth':

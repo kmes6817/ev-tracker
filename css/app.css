@@ -792,6 +792,27 @@ select:focus {
   color: var(--danger, #e24b4a);
 }
 
+/* ---------- Budget card (extensions/budget) ---------- */
+.budget-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.budget-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: var(--text-soft);
+}
+.budget-foot {
+  margin-top: 4px;
+  font-size: 11px;
+  text-align: right;
+}
+
 /* ---------- Buttons ---------- */
 .btn-primary {
   width: 100%;

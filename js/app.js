@@ -10,7 +10,13 @@ import {
   safeParseInt,
   toast,
 } from './util.js';
-import { categoriesOfType, categoryMeta } from './categories.js';
+import {
+  categoriesOfType,
+  categoryMeta,
+  addCustomCategory,
+  removeCustomCategory,
+  isCustomCategory,
+} from './categories.js';
 import { computeEvStats } from './evStats.js';
 import { recordsToCsv, csvToRecords, mergeImported, downloadBlob } from './csv.js';
 import { icon } from './icons.js';
@@ -132,32 +138,70 @@ const app = {
     if (status === 'error') toast(msg, 'error', 3200);
   },
 
+  /** True if the selected category should reveal the kwh/odo extra fields. */
+  _hasEvFields(cat) {
+    const ef = categoryMeta(cat).extraFields || [];
+    return ef.includes('kwh') || ef.includes('odo');
+  },
+
   setType(t) {
     state.fType = t;
     state.fCat = '';
     document.querySelectorAll('.type-btn').forEach((b) => b.classList.toggle('on', b.dataset.type === t));
-    $('#ev-fields').classList.add('hide'); // kwh/odo only relevant when cat === '充電'
+    $('#ev-fields').classList.add('hide');
     this.renderCats();
   },
 
   selCat(c) {
     state.fCat = c;
-    $('#ev-fields').classList.toggle('hide', c !== '充電');
+    $('#ev-fields').classList.toggle('hide', !this._hasEvFields(c));
     this.renderCats();
   },
 
   renderCats() {
     const cats = categoriesOfType(state.fType);
-    $('#cat-grid').innerHTML = cats
+    const tiles = cats
       .map((c) => {
         const meta = categoryMeta(c);
         const on = state.fCat === c;
         const style = on ? `border-color:${meta.color};background:${meta.bg};color:${meta.color}` : '';
+        const delBadge = isCustomCategory(c)
+          ? `<span class="cat-del" data-action="deleteCustomCat" data-cat="${escapeHtml(c)}" role="button" aria-label="刪除自訂類別 ${escapeHtml(c)}">×</span>`
+          : '';
         return `<button type="button" class="cat-btn ${on ? 'sel' : ''}" data-action="selCat" data-cat="${escapeHtml(c)}" style="${style}" aria-pressed="${on}">
-          <span class="ci" aria-hidden="true">${icon(meta.icon)}</span>${escapeHtml(c)}
+          <span class="ci" aria-hidden="true">${icon(meta.icon)}</span>${escapeHtml(c)}${delBadge}
         </button>`;
       })
       .join('');
+    const addTile = `<button type="button" class="cat-btn cat-add" data-action="addCustomCat" aria-label="新增自訂類別">
+      <span class="ci" aria-hidden="true">${icon('plus')}</span>新增
+    </button>`;
+    $('#cat-grid').innerHTML = tiles + addTile;
+  },
+
+  addCustomCat() {
+    const name = (window.prompt('新增類別名稱(最多 12 字):', '') || '').trim();
+    if (!name) return;
+    const isOnce = window.confirm('是「一次性」類別嗎?\n\n確定 = 一次性 / 取消 = 日常');
+    try {
+      addCustomCategory(name, isOnce ? 'o' : 'r');
+      state.fType = isOnce ? 'o' : 'r';
+      state.fCat = name;
+      document.querySelectorAll('.type-btn').forEach((b) => b.classList.toggle('on', b.dataset.type === state.fType));
+      this.renderCats();
+      toast(`已新增「${name}」`);
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  },
+
+  deleteCustomCat(name) {
+    if (!window.confirm(`刪除自訂類別「${name}」?既有紀錄不會被刪除。`)) return;
+    if (removeCustomCategory(name)) {
+      if (state.fCat === name) state.fCat = '';
+      this.renderCats();
+      toast('已刪除');
+    }
   },
 
   /** Legacy brand+note → desc migration helper.
@@ -221,8 +265,8 @@ const app = {
       date,
       desc: $('#f-desc').value.trim(),
       type: state.fType,
-      ...(state.fCat === '充電' && kwh > 0 ? { kwh } : {}),
-      ...(state.fCat === '充電' && odo > 0 ? { odo } : {}),
+      ...(this._hasEvFields(state.fCat) && kwh > 0 ? { kwh } : {}),
+      ...(this._hasEvFields(state.fCat) && odo > 0 ? { odo } : {}),
     };
     if (state.editId) {
       state.recs = state.recs.map((r) => (r.id === state.editId ? { ...r, ...rec } : r));
@@ -257,7 +301,7 @@ const app = {
     $('#f-desc').value = r.desc || this._legacyDesc(r);
     $('#f-kwh').value = r.kwh || '';
     $('#f-odo').value = r.odo || '';
-    $('#ev-fields').classList.toggle('hide', r.cat !== '充電');
+    $('#ev-fields').classList.toggle('hide', !this._hasEvFields(r.cat));
     // If user invoked edit from the list/chart tab, open the add form as a sheet
     // instead of navigating away from their context.
     if (state.fromTab !== 'add') {
@@ -809,6 +853,13 @@ const handleClick = (e) => {
     case 'selCat':
       haptic(5);
       return app.selCat(t.dataset.cat);
+    case 'addCustomCat':
+      haptic(8);
+      return app.addCustomCat();
+    case 'deleteCustomCat':
+      e.stopPropagation();
+      haptic(8);
+      return app.deleteCustomCat(t.dataset.cat);
     case 'submit':
       return app.submitForm();
     case 'cancelEdit':

@@ -87,6 +87,9 @@ export const ICONS = {
   'hand-wave': SVG(
     `<path d="M5 9v7a5 5 0 0 0 10 0V5a2 2 0 0 0-4 0v7M15 7a2 2 0 1 1 4 0v7M5 13a2 2 0 0 0 0-4V7a2 2 0 0 0-4 0v6a5 5 0 0 0 .5 2" ${S}/>`
   ),
+  utensils: SVG(
+    `<path d="M7 3v8a2 2 0 0 0 2 2v8M5 3v6M9 3v6M16 3c-2 0-3 2-3 5s1 5 3 5v8" ${S}/>`
+  ),
 };
 
 /**

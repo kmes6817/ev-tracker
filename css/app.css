@@ -766,6 +766,31 @@ select:focus {
 .cat-btn.sel {
   font-weight: 500;
 }
+.cat-btn {
+  position: relative;
+}
+.cat-btn.cat-add {
+  border-style: dashed;
+  color: var(--text-ghost);
+  opacity: 0.85;
+}
+.cat-del {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  line-height: 14px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-ghost);
+  border-radius: 50%;
+  background: var(--surface);
+  cursor: pointer;
+}
+.cat-del:hover {
+  color: var(--danger, #e24b4a);
+}
 
 /* ---------- Buttons ---------- */
 .btn-primary {
